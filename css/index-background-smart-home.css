@@ -1,0 +1,9 @@
+.index-background-smart-home {
+  background: url("../img/header/index-background-smart-home.jfif");
+  height: 100%;
+  width: 100%;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  min-height: 60vh;
+}

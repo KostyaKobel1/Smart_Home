@@ -14,9 +14,37 @@
   </head>
   <body>
     <header>
-      <h1>Welcome to Your Smart Home</h1>
-      <p>Control and monitor your smart home devices from this central hub.</p>
+      <nav
+        data-hx-trigger="load"
+        data-hx-swap="outerHTML"
+        data-hx-get="global.header-nav.partial.html"
+      ></nav>
     </header>
-    <script src="js/index.js"></script>
+    <main>
+      <div class="main__container main">
+        <section class="main__header">
+          <h1 class="main__title">Welcome to Your Smart Home</h1>
+          <p class="main__description">
+            Control and monitor your smart home devices from this central hub.
+          </p>
+        </section>
+
+        <section class="main__content">
+          <div
+            data-hx-trigger="load"
+            data-hx-swap="outerHTML"
+            data-hx-get="index.components-manager.partial.html"
+          ></div>
+        </section>
+      </div>
+    </main>
+
+    <footer
+      data-hx-trigger="load"
+      data-hx-swap="outerHTML"
+      data-hx-get="global.footer.partial.html"
+    ></footer>
+
+    <script type="module" src="js/index.js"></script>
   </body>
 </html>
