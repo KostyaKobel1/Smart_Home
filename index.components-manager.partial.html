@@ -1,0 +1,64 @@
+<section class="component-action">
+  <div class="component-action__header">
+    <h2 class="component-action__title">Manage Smart Home Components</h2>
+    <p class="component-action__subtitle">
+      Add or remove devices to control them remotely
+    </p>
+  </div>
+
+  <div class="component-action__body">
+    <form
+      method="get"
+      class="component-action__form"
+      id="component-action-form"
+    >
+      <div class="component-action__input-group">
+        <label for="component-name-input" class="component-action__label">
+          Enter component name
+        </label>
+        <input
+          name="name"
+          type="text"
+          id="component-name-input"
+          class="component-action__input"
+          placeholder="e.g., Living Room Light"
+          required
+          autocomplete="off"
+        />
+        <label for="component-action__select" class="component-action__label">
+          Select component
+        </label>
+        <select
+          name="component-action__select"
+          id="component-action__select"
+        ></select>
+      </div>
+    </form>
+
+    <div class="component-action__buttons">
+      <button
+        id="create-component-btn"
+        class="component-action__btn component-action__btn--create"
+      >
+        <span class="component-action__btn-icon">+</span>
+        Create Component
+      </button>
+      <button
+        id="remove-component-btn"
+        class="component-action__btn component-action__btn--remove"
+      >
+        <span class="component-action__btn-icon">−</span>
+        Remove Component
+      </button>
+      <button
+        id="get-full-list-of-components-btn"
+        class="component-action__btn component-action__btn--list"
+      >
+        <span class="component-action__btn-icon">≡</span>
+        Get List Of Components
+      </button>
+    </div>
+  </div>
+
+  <div id="component-action-result" class="component-action__result"></div>
+</section>
