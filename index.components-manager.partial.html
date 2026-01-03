@@ -25,6 +25,21 @@
           required
           autocomplete="off"
         />
+        <label for="component-type-select" class="component-action__label">
+          Component type
+        </label>
+        <select
+          name="component-type-select"
+          id="component-type-select"
+          class="component-action__input"
+        >
+          <option value="generic">Generic Device</option>
+          <option value="light">Light</option>
+          <option value="thermostat">Thermostat</option>
+          <option value="lock">Smart Lock</option>
+          <option value="camera">Camera</option>
+          <option value="television">Television (Extended)</option>
+        </select>
         <label for="component-action__select" class="component-action__label">
           Select component
         </label>
@@ -57,8 +72,35 @@
         <span class="component-action__btn-icon">≡</span>
         Get List Of Components
       </button>
+      <button
+        id="show-stats-btn"
+        class="component-action__btn component-action__btn--stats"
+      >
+        <span class="component-action__btn-icon">📊</span>
+        Show Statistics
+      </button>
+      <button
+        id="show-event-log-btn"
+        class="component-action__btn component-action__btn--log"
+      >
+        <span class="component-action__btn-icon">📋</span>
+        Event Log
+      </button>
+      <button
+        id="reset-data-btn"
+        class="component-action__btn component-action__btn--reset"
+      >
+        <span class="component-action__btn-icon">🔄</span>
+        Reset Data
+      </button>
     </div>
   </div>
 
   <div id="component-action-result" class="component-action__result"></div>
+
+  <!-- Statistics Dashboard -->
+  <div id="stats-dashboard" class="stats-dashboard"></div>
+
+  <!-- Event Log -->
+  <div id="event-log" class="event-log"></div>
 </section>
