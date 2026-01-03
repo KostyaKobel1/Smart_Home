@@ -1,8 +1,6 @@
 async function init() {
   // Import modules after HTMX partials are loaded
   await Promise.all([
-    import('./index-base.js'),
-    import('./index-lamp.js'),
     import('./index.components-manager.js'),
     import('./header-nav.js'),
   ]);

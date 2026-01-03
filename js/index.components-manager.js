@@ -1,27 +1,37 @@
-import { handleCreate } from './handlers/component-create.js';
-import { handleRemove } from './handlers/component-remove.js';
-import { handleList } from './handlers/component-list.js';
+import { handleCreateComponent, handleDeleteComponent, handleGetComponents, handleReset, handleGetStats, handleGetEventLog, handleComponentAction } from './handlers/smart-home-handlers.js';
 import { updateSelectOptions, getSelectedComponent } from './handlers/component-select.js';
 
 // Constants
 const TOAST_DURATION = 3000;
 const DOM_ELEMENT_IDS = {
     input: 'component-name-input',
+    typeSelect: 'component-type-select',
     createBtn: 'create-component-btn',
     removeBtn: 'remove-component-btn',
     listBtn: 'get-full-list-of-components-btn',
+    statsBtn: 'show-stats-btn',
+    eventLogBtn: 'show-event-log-btn',
+    resetBtn: 'reset-data-btn',
     result: 'component-action-result',
     select: 'component-action__select',
+    statsDashboard: 'stats-dashboard',
+    eventLog: 'event-log',
 };
 
 // DOM element cache
 const el = {
     input: null,
+    typeSelect: null,
     createBtn: null,
     removeBtn: null,
     listBtn: null,
+    statsBtn: null,
+    eventLogBtn: null,
+    resetBtn: null,
     result: null,
     select: null,
+    statsDashboard: null,
+    eventLog: null,
 };
 
 /**
@@ -29,11 +39,17 @@ const el = {
  */
 function cacheElements() {
     el.input = document.getElementById(DOM_ELEMENT_IDS.input);
+    el.typeSelect = document.getElementById(DOM_ELEMENT_IDS.typeSelect);
     el.createBtn = document.getElementById(DOM_ELEMENT_IDS.createBtn);
     el.removeBtn = document.getElementById(DOM_ELEMENT_IDS.removeBtn);
     el.listBtn = document.getElementById(DOM_ELEMENT_IDS.listBtn);
+    el.statsBtn = document.getElementById(DOM_ELEMENT_IDS.statsBtn);
+    el.eventLogBtn = document.getElementById(DOM_ELEMENT_IDS.eventLogBtn);
+    el.resetBtn = document.getElementById(DOM_ELEMENT_IDS.resetBtn);
     el.result = document.getElementById(DOM_ELEMENT_IDS.result);
     el.select = document.getElementById(DOM_ELEMENT_IDS.select);
+    el.statsDashboard = document.getElementById(DOM_ELEMENT_IDS.statsDashboard);
+    el.eventLog = document.getElementById(DOM_ELEMENT_IDS.eventLog);
 }
 /**
  * Ensure toast container exists in DOM
@@ -121,6 +137,238 @@ function displayComponentsList(list) {
     el.result.appendChild(ul);
 }
 
+/**
+ * Render expandable list of components with actions
+ * @param {Array} components - Array of component info objects
+ */
+function displayComponentsAccordion(components) {
+    if (!el.result) return;
+    el.result.className = 'component-action__result component-action__result--success';
+    el.result.innerHTML = '';
+
+    const heading = document.createElement('strong');
+    heading.className = 'component-action__result-heading';
+    heading.textContent = `Active Components (${components.length}):`;
+    el.result.appendChild(heading);
+
+    const container = document.createElement('div');
+    container.className = 'component-accordion';
+
+    components.forEach(c => {
+        const item = document.createElement('div');
+        item.className = 'component-accordion__item';
+        item.dataset.id = String(c.id);
+        item.dataset.type = String(c.type);
+
+        const header = document.createElement('div');
+        header.className = 'component-accordion__header';
+        header.innerHTML = `
+            <span class="component-accordion__title">${c.name}</span>
+            <span class="component-accordion__meta">${c.type} • ${c.status}</span>
+            <span class="component-accordion__chevron">▾</span>
+        `;
+
+        const panel = document.createElement('div');
+        panel.className = 'component-accordion__panel';
+
+        const controls = buildActionControls(c);
+        panel.appendChild(controls);
+
+        header.addEventListener('click', () => {
+            const open = item.classList.toggle('open');
+            if (open) {
+                panel.style.maxHeight = panel.scrollHeight + 'px';
+            } else {
+                panel.style.maxHeight = '0px';
+            }
+        });
+
+        item.appendChild(header);
+        item.appendChild(panel);
+        container.appendChild(item);
+    });
+
+    el.result.appendChild(container);
+}
+
+/**
+ * Build action controls for a component
+ * @param {Object} c - Component info
+ * @returns {HTMLElement}
+ */
+function buildActionControls(c) {
+    const wrap = document.createElement('div');
+    wrap.className = 'component-actions';
+
+    const actions = Array.isArray(c.actions) ? c.actions : [];
+    const byKey = new Map(actions.map(a => [String(a.key).toLowerCase(), a]));
+
+    // Grouped power controls
+    const powerKeys = ['on', 'off', 'toggle'];
+    const hasPower = powerKeys.some(k => byKey.has(k));
+    if (hasPower) {
+        const row = document.createElement('div');
+        row.className = 'component-actions__row';
+        const label = document.createElement('span');
+        label.className = 'component-actions__label';
+        label.textContent = 'Power';
+        row.appendChild(label);
+
+        powerKeys.forEach(k => {
+            if (!byKey.has(k)) return;
+            const btn = document.createElement('button');
+            btn.className = 'component-action__btn component-action__btn--mini';
+            btn.textContent = byKey.get(k).label || k;
+            btn.addEventListener('click', () => executeAndToast(c.id, k));
+            row.appendChild(btn);
+        });
+        wrap.appendChild(row);
+    }
+
+    // Optional grouped sets for better UX
+    const groupedSets = [
+        { label: 'Lock', keys: ['lock', 'unlock'] },
+        { label: 'Recording', keys: ['record', 'stop'] },
+        { label: 'Volume', keys: ['mute', 'unmute', 'volumeup', 'volumedown'] },
+        { label: 'Channel', keys: ['channelup', 'channeldown'] },
+        { label: 'Input Source', keys: ['inputtv', 'inputhdmi1', 'inputhdmi2', 'inputusb'] },
+        { label: 'Info', keys: ['getchannels'] },
+    ];
+    groupedSets.forEach(group => {
+        const present = group.keys.filter(k => byKey.has(k));
+        if (present.length === 0) return;
+        const row = document.createElement('div');
+        row.className = 'component-actions__row';
+        const label = document.createElement('span');
+        label.className = 'component-actions__label';
+        label.textContent = group.label;
+        row.appendChild(label);
+        present.forEach(k => {
+            const spec = byKey.get(k);
+            const btn = document.createElement('button');
+            btn.className = 'component-action__btn component-action__btn--mini';
+            btn.textContent = spec.label || k;
+            btn.addEventListener('click', () => executeAndToast(c.id, k));
+            row.appendChild(btn);
+        });
+        wrap.appendChild(row);
+        // remove from processing list
+        present.forEach(k => byKey.delete(k));
+    });
+
+    // Render remaining actions
+    byKey.forEach(spec => {
+        const key = String(spec.key).toLowerCase();
+        const kind = String(spec.kind || 'button').toLowerCase();
+        if (kind === 'range') {
+            const row = document.createElement('div');
+            row.className = 'component-actions__row';
+            const label = document.createElement('span');
+            label.className = 'component-actions__label';
+            label.textContent = spec.label || 'Adjust';
+            const slider = document.createElement('input');
+            slider.type = 'range';
+            if (typeof spec.min === 'number') slider.min = String(spec.min);
+            if (typeof spec.max === 'number') slider.max = String(spec.max);
+            if (typeof spec.value === 'number') slider.value = String(spec.value);
+            slider.className = 'component-actions__slider';
+            const val = document.createElement('span');
+            val.className = 'component-actions__value';
+            const unit = spec.unit ? String(spec.unit) : '';
+            val.textContent = `${slider.value}${unit}`;
+            slider.addEventListener('input', () => { val.textContent = `${slider.value}${unit}`; });
+            const btn = document.createElement('button');
+            btn.className = 'component-action__btn component-action__btn--mini';
+            btn.textContent = 'Set';
+            const paramName = getParamNameForAction(key);
+            btn.addEventListener('click', () => executeAndToast(c.id, key, { [paramName]: Number(slider.value) }));
+            row.appendChild(label);
+            row.appendChild(slider);
+            row.appendChild(val);
+            row.appendChild(btn);
+            wrap.appendChild(row);
+        } else {
+            const row = document.createElement('div');
+            row.className = 'component-actions__row';
+            const label = document.createElement('span');
+            label.className = 'component-actions__label';
+            label.textContent = spec.label || key;
+            const btn = document.createElement('button');
+            btn.className = 'component-action__btn component-action__btn--mini';
+            btn.textContent = spec.label || key;
+            btn.addEventListener('click', () => executeAndToast(c.id, key));
+            row.appendChild(label);
+            row.appendChild(btn);
+            wrap.appendChild(row);
+        }
+    });
+
+    const footer = document.createElement('div');
+    footer.className = 'component-actions__footer';
+    const updated = document.createElement('span');
+    updated.className = 'component-actions__updated';
+    updated.textContent = `Updated: ${new Date(c.lastUpdated).toLocaleString()}`;
+    footer.appendChild(updated);
+    wrap.appendChild(footer);
+
+    return wrap;
+}
+
+function getParamNameForAction(key) {
+    switch (String(key).toLowerCase()) {
+        case 'setbrightness':
+            return 'brightness';
+        case 'settemperature':
+            return 'temperature';
+        case 'setvolume':
+            return 'volume';
+        case 'setchannel':
+            return 'channel';
+        default:
+            return 'value';
+    }
+}
+
+function executeAndToast(id, action, params = {}) {
+    handleComponentAction(id, action, params, {
+        onSuccess: (res) => {
+            showToast(res.message, 'success');
+            // Optimistically update UI meta and timestamps
+            const item = el.result?.querySelector(`.component-accordion__item[data-id="${String(id)}"]`);
+            if (item) {
+                const meta = item.querySelector('.component-accordion__meta');
+                const updated = item.querySelector('.component-actions__updated');
+                const type = (item.dataset.type || '').toLowerCase();
+                const nowText = `Updated: ${new Date().toLocaleString()}`;
+                if (updated) updated.textContent = nowText;
+
+                const toStatusText = (status) => `${type} • ${status}`;
+                if (meta) {
+                    const current = meta.textContent || `${type} • offline`;
+                    const isOnline = current.toLowerCase().includes('online');
+                    switch ((action || '').toLowerCase()) {
+                        case 'on':
+                            meta.textContent = toStatusText('online');
+                            break;
+                        case 'off':
+                            meta.textContent = toStatusText('offline');
+                            break;
+                        case 'toggle':
+                            meta.textContent = toStatusText(isOnline ? 'offline' : 'online');
+                            break;
+                        default:
+                            // leave meta as is for other actions
+                            break;
+                    }
+                }
+            }
+        },
+        onError: (err) => {
+            showToast(String(err), 'error');
+        }
+    });
+}
+
 
 /**
  * Get trimmed component name from input
@@ -128,6 +376,14 @@ function displayComponentsList(list) {
  */
 function getComponentName() {
     return (el.input?.value || '').trim();
+}
+
+/**
+ * Get selected component type
+ * @returns {string} Component type or 'generic'
+ */
+function getComponentType() {
+    return el.typeSelect?.value || 'generic';
 }
 
 /**
@@ -145,21 +401,176 @@ const callbacks = {
  * Event handler for create button click
  */
 function handleCreateClick() {
-    handleCreate(getComponentName(), callbacks);
+    const name = getComponentName();
+    const type = getComponentType();
+    handleCreateComponent(name, type, {
+        onSuccess: (info) => {
+            callbacks.updateSelect();
+            callbacks.clearInput();
+            callbacks.showToast(`Component "${info.name}" (${info.type}) added successfully!`, 'success');
+            callbacks.displayResult(`Component "${info.name}" added successfully.`, 'success');
+        },
+        onError: (err) => {
+            callbacks.showToast(String(err), 'error');
+            callbacks.displayResult(String(err), 'error');
+        }
+    });
 }
 
 /**
  * Event handler for remove button click
  */
 function handleRemoveClick() {
-    handleRemove(getSelectedComponent(el.select), callbacks);
+    const id = getSelectedComponent(el.select);
+    handleDeleteComponent(id, {
+        onSuccess: (res) => {
+            callbacks.updateSelect();
+            callbacks.clearInput();
+            callbacks.showToast(res.message, 'success');
+            callbacks.displayResult(res.message, 'success');
+        },
+        onError: (err) => {
+            callbacks.showToast(String(err), 'error');
+            callbacks.displayResult(String(err), 'error');
+        }
+    });
 }
 
 /**
  * Event handler for list button click
  */
 function handleListClick() {
-    handleList(callbacks);
+    handleGetComponents({
+        onSuccess: (list) => {
+            const items = Array.isArray(list) ? list : [];
+            displayComponentsAccordion(items);
+            callbacks.showToast(`Found ${items.length} component(s)`, 'info');
+        },
+        onError: (err) => {
+            callbacks.showToast(String(err), 'error');
+            callbacks.displayResult(String(err), 'error');
+        }
+    });
+}
+
+/**
+ * Event handler for stats button click
+ */
+function handleStatsClick() {
+    handleGetStats({
+        onSuccess: (stats) => {
+            displayStats(stats);
+            callbacks.showToast('Statistics updated', 'info');
+        },
+        onError: (err) => {
+            callbacks.showToast(String(err), 'error');
+        }
+    });
+}
+
+/**
+ * Event handler for event log button click
+ */
+function handleEventLogClick() {
+    handleGetEventLog(20, {
+        onSuccess: (log) => {
+            displayEventLog(log);
+            callbacks.showToast('Event log updated', 'info');
+        },
+        onError: (err) => {
+            callbacks.showToast(String(err), 'error');
+        }
+    });
+}
+
+/**
+ * Event handler for reset button click
+ */
+function handleResetClick() {
+    if (!confirm('⚠️ Are you sure you want to reset all data? This cannot be undone.')) {
+        return;
+    }
+    
+    handleReset({
+        onSuccess: (res) => {
+            callbacks.updateSelect();
+            callbacks.clearInput();
+            el.result.innerHTML = '';
+            el.statsDashboard.innerHTML = '';
+            el.eventLog.innerHTML = '';
+            callbacks.showToast(res.message, 'success');
+            callbacks.displayResult(res.message, 'success');
+        },
+        onError: (err) => {
+            callbacks.showToast(String(err), 'error');
+        }
+    });
+}
+
+/**
+ * Display statistics dashboard
+ */
+function displayStats(stats) {
+    if (!el.statsDashboard) return;
+    
+    const byTypeHtml = Object.entries(stats.byType)
+        .map(([type, count]) => `<span class="stat-badge">${type}: ${count}</span>`)
+        .join('');
+    
+    el.statsDashboard.innerHTML = `
+        <div class="stats-container">
+            <h3 class="stats-title">📊 System Statistics</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <span class="stat-label">Total Components</span>
+                    <span class="stat-value">${stats.total}</span>
+                </div>
+                <div class="stat-item stat-item--online">
+                    <span class="stat-label">Online</span>
+                    <span class="stat-value">${stats.online}</span>
+                </div>
+                <div class="stat-item stat-item--offline">
+                    <span class="stat-label">Offline</span>
+                    <span class="stat-value">${stats.offline}</span>
+                </div>
+            </div>
+            <div class="stats-by-type">
+                <h4>Components by Type</h4>
+                <div class="stat-badges">${byTypeHtml || '<span class="stat-badge">No components</span>'}</div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Display event log
+ */
+function displayEventLog(log) {
+    if (!el.eventLog) return;
+    
+    if (!Array.isArray(log) || log.length === 0) {
+        el.eventLog.innerHTML = '<div class="event-log-empty">No events logged yet</div>';
+        return;
+    }
+    
+    const logHtml = log.map(event => {
+        const typeClass = event.type.toLowerCase();
+        const time = new Date(event.timestamp).toLocaleTimeString();
+        return `
+            <div class="event-item event-item--${typeClass}">
+                <span class="event-time">${time}</span>
+                <span class="event-type">${event.type}</span>
+                <span class="event-message">${event.message}</span>
+            </div>
+        `;
+    }).join('');
+    
+    el.eventLog.innerHTML = `
+        <div class="event-log-container">
+            <h3 class="event-log-title">📋 Event Log (Last 20)</h3>
+            <div class="event-log-list">${logHtml}</div>
+        </div>
+    `;
 }
 /**
  * Bind event listeners to buttons
@@ -168,6 +579,9 @@ function bindEvents() {
     el.createBtn?.addEventListener('click', handleCreateClick);
     el.removeBtn?.addEventListener('click', handleRemoveClick);
     el.listBtn?.addEventListener('click', handleListClick);
+    el.statsBtn?.addEventListener('click', handleStatsClick);
+    el.eventLogBtn?.addEventListener('click', handleEventLogClick);
+    el.resetBtn?.addEventListener('click', handleResetClick);
 }
 
 /**
@@ -175,7 +589,9 @@ function bindEvents() {
  * @returns {boolean} True if all elements exist
  */
 function validateElements() {
-    return el.input && el.createBtn && el.removeBtn && el.listBtn && el.result && el.select;
+    return el.input && el.typeSelect && el.createBtn && el.removeBtn && el.listBtn && 
+           el.statsBtn && el.eventLogBtn && el.resetBtn && 
+           el.result && el.select && el.statsDashboard && el.eventLog;
 }
 
 /**
@@ -190,6 +606,8 @@ function init() {
     }
 
     bindEvents();
+    // Populate select with current components (IDs)
+    updateSelectOptions(el.select);
 }
 
 if (document.readyState === 'loading') {

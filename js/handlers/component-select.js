@@ -2,12 +2,12 @@
  * Component Select Handler - Manages select dropdown operations
  */
 
-import { getComponents } from '../services/component-service.js';
+import { smartHomeService } from '../services/smart-home-service.js';
 
 const DEFAULT_OPTION = '<option value="">-- Select a component --</option>';
 
 /**
- * Update select element with current components
+ * Update select element with current components (value=id, label=name(type))
  * @param {HTMLSelectElement} selectElement - Select element to update
  */
 export function updateSelectOptions(selectElement) {
@@ -15,13 +15,13 @@ export function updateSelectOptions(selectElement) {
         return;
     }
 
-    const components = getComponents();
+    const components = smartHomeService.listComponents();
     selectElement.innerHTML = DEFAULT_OPTION;
 
-    components.forEach(component => {
+    components.forEach(c => {
         const option = document.createElement('option');
-        option.value = component;
-        option.textContent = component;
+        option.value = String(c.id);
+        option.textContent = `${c.name} (${c.type})`;
         selectElement.appendChild(option);
     });
 }
