@@ -1,6 +1,10 @@
 /* Smart Home Header Navigation */
 .global__header {
-  background: linear-gradient(135deg, #ffffff 0%, #f9f9f9 100%);
+  background: linear-gradient(
+    135deg,
+    var(--alt-text-color) 0%,
+    var(--background-light) 100%
+  );
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   position: sticky;
   top: 0;
@@ -34,9 +38,7 @@
           height: 2.2rem;
         }
       }
-      .header__logo:hover .header__logo-image {
-        transform: rotate(10deg) scale(1.05);
-      }
+
       .header__logo-text {
         display: none;
         font-size: 1.1rem;
@@ -44,17 +46,22 @@
           display: inline;
         }
       }
-    }
-    .header__logo:hover {
-      color: var(--scroll-up-color);
-      transform: translateY(-2px);
+
+      &:hover {
+        color: var(--scroll-up-color);
+        transform: translateY(-2px);
+
+        .header__logo-image {
+          transform: rotate(10deg) scale(1.05);
+        }
+      }
     }
     .header__burger {
       display: flex;
       position: relative;
       width: 40px;
       height: 40px;
-      background: none;
+      background-color: transparent;
       border: none;
       cursor: pointer;
       padding: 0.5rem;
@@ -94,7 +101,11 @@
       width: 100%;
       height: 0;
       overflow: hidden;
-      background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+      background: linear-gradient(
+        135deg,
+        var(--color-dark) 0%,
+        var(--color-dark-alt) 100%
+      );
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -144,7 +155,7 @@
             padding: 0.5rem 1rem;
             border-radius: var(--border-radius);
             @media (max-width: 769px) {
-              color: #ffffff;
+              color: var(--alt-text-color);
             }
             @media (min-width: 770px) {
               font-size: 0.95rem;
