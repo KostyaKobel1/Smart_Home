@@ -1,0 +1,29 @@
+/* Responsive Styles - Media Queries */
+
+@media (max-width: 768px) {
+  .main__title {
+    font-size: 1.75rem;
+  }
+  .main__description {
+    font-size: 0.95rem;
+  }
+  .component-action__buttons {
+    grid-template-columns: 1fr;
+  }
+  .component-action__header {
+    padding: var(--spacing-md);
+  }
+  .component-action__body {
+    padding: var(--spacing-md);
+  }
+  .component-actions__label {
+    min-width: 70px;
+    font-size: 0.85rem;
+  }
+  .component-actions__row {
+    flex-wrap: wrap;
+  }
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}

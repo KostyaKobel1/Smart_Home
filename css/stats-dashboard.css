@@ -1,0 +1,76 @@
+/* Stats Dashboard Styles - Statistics Display */
+
+.stats-dashboard {
+  margin-top: var(--spacing-lg);
+  .stats-container {
+    background: linear-gradient(
+      135deg,
+      var(--color-stats-gradient-1) 0%,
+      var(--color-stats-gradient-2) 100%
+    );
+    color: var(--alt-text-color);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    animation: fadeInUp 0.4s ease-out;
+    .stats-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0 0 var(--spacing-md) 0;
+      text-align: center;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: var(--spacing-md);
+      margin-bottom: var(--spacing-md);
+      .stat-item {
+        background-color: rgba(255, 255, 255, 0.2);
+        padding: var(--spacing-md);
+        border-radius: var(--border-radius);
+        text-align: center;
+        backdrop-filter: blur(10px);
+        &--online {
+          background-color: rgba(40, 167, 69, 0.3);
+        }
+        &--offline {
+          background-color: rgba(220, 53, 69, 0.3);
+        }
+        .stat-label {
+          display: block;
+          font-size: 0.85rem;
+          opacity: 0.9;
+          margin-bottom: 0.25rem;
+        }
+        .stat-value {
+          display: block;
+          font-size: 2rem;
+          font-weight: 700;
+        }
+      }
+    }
+    .stats-by-type {
+      margin-top: var(--spacing-md);
+      padding-top: var(--spacing-md);
+      border-top: 1px solid rgba(255, 255, 255, 0.3);
+      h4 {
+        margin: 0 0 var(--spacing-sm) 0;
+        font-size: 1rem;
+      }
+      .stat-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        .stat-badge {
+          display: inline-block;
+          padding: 0.5rem 1rem;
+          background-color: rgba(255, 255, 255, 0.25);
+          border-radius: 20px;
+          font-size: 0.9rem;
+          font-weight: 600;
+          backdrop-filter: blur(10px);
+        }
+      }
+    }
+  }
+}

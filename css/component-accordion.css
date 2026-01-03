@@ -1,0 +1,77 @@
+/* Component Accordion Styles - Expandable Component List */
+
+.component-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  .component-accordion__item {
+    border: 2px solid var(--color-border-light);
+    border-radius: var(--border-radius);
+    background-color: var(--alt-text-color);
+    overflow: hidden;
+    .component-accordion__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      user-select: none;
+      background-color: var(--background-light);
+      .component-accordion__title {
+        font-weight: 700;
+        color: var(--title-text-color);
+      }
+      .component-accordion__meta {
+        color: var(--primary-text-color);
+        font-size: 0.9rem;
+      }
+      .component-accordion__chevron {
+        transition: transform var(--transition-speed) ease;
+      }
+    }
+    .component-accordion__panel {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height var(--transition-speed) ease;
+      border-top: 1px solid var(--color-border-light);
+      background-color: var(--alt-text-color);
+      .component-actions {
+        padding: 0.75rem 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        .component-actions__row {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          .component-actions__label {
+            min-width: 90px;
+            font-weight: 600;
+            color: var(--title-text-color);
+          }
+          .component-actions__slider {
+            flex: 1;
+          }
+          .component-actions__value {
+            width: 60px;
+            text-align: right;
+            color: var(--primary-text-color);
+          }
+        }
+        .component-actions__footer {
+          margin-top: 0.25rem;
+          display: flex;
+          justify-content: flex-end;
+          .component-actions__updated {
+            font-size: 0.8rem;
+            color: var(--primary-text-color);
+          }
+        }
+      }
+    }
+    .component-accordion__item.open .component-accordion__chevron {
+      transform: rotate(180deg);
+    }
+  }
+}
