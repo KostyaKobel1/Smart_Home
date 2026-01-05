@@ -41,12 +41,16 @@ let statsVisible = false;
  * Refresh statistics if dashboard is visible
  */
 function autoRefreshStats() {
+    console.log('[Stats] Auto-refresh triggered. Visible:', statsVisible);
     if (statsVisible) {
+        console.log('[Stats] Stats visible - fetching updated stats');
         handleGetStats({
             onSuccess: (stats) => {
+                console.log('[Stats] Stats received:', stats);
                 displayStats(stats);
             },
-            onError: () => {
+            onError: (error) => {
+                console.warn('[Stats] Auto-refresh error:', error);
                 // Silent fail for auto-refresh
             }
         });
@@ -367,8 +371,10 @@ function getParamNameForAction(key) {
 }
 
 function executeAndToast(id, action, params = {}) {
+    console.log('[Action] Executing action:', { id, action, params });
     handleComponentAction(id, action, params, {
         onSuccess: (res) => {
+            console.log('[Action] Action succeeded:', res);
             showToast(res.message, 'success');
             autoRefreshStats();
             // Optimistically update UI meta and timestamps
@@ -443,6 +449,7 @@ function handleCreateClick() {
     const type = getComponentType();
     handleCreateComponent(name, type, {
         onSuccess: (info) => {
+            console.log('[Action] Component created:', info);
             callbacks.updateSelect();
             callbacks.clearInput();
             callbacks.showToast(`Component "${info.name}" (${info.type}) added successfully!`, 'success');
@@ -497,13 +504,17 @@ function handleListClick() {
  * Event handler for stats button click
  */
 function handleStatsClick() {
+    console.log('[Stats] Show Stats button clicked');
     statsVisible = true;
+    console.log('[Stats] statsVisible set to true');
     handleGetStats({
         onSuccess: (stats) => {
+            console.log('[Stats] Initial stats loaded:', stats);
             displayStats(stats);
             callbacks.showToast('Statistics updated', 'info');
         },
         onError: (err) => {
+            console.error('[Stats] Error loading stats:', err);
             callbacks.showToast(String(err), 'error');
         }
     });
