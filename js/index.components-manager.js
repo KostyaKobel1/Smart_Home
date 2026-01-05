@@ -2,7 +2,7 @@ import { handleCreateComponent, handleDeleteComponent, handleGetComponents, hand
 import { updateSelectOptions, getSelectedComponent } from './handlers/component-select.js';
 
 // Constants
-const TOAST_DURATION = 3000;
+const TOAST_DURATION = 3000; // 3 seconds
 const DOM_ELEMENT_IDS = {
     input: 'component-name-input',
     typeSelect: 'component-type-select',
@@ -91,14 +91,21 @@ function ensureToastContainer() {
  * @returns {string} Icon character
  */
 function getToastIcon(type) {
-    const icons = { success: '✓', error: '✕', info: 'ℹ' };
+    const icons = { 
+        success: '✓', 
+        error: '✕', 
+        info: 'ℹ',
+        create: '✨',
+        delete: '🗑️',
+        update: '🔄'
+    };
     return icons[type] || icons.info;
 }
 
 /**
  * Display a toast notification
  * @param {string} message - Toast message
- * @param {string} type - Toast type (success, error, info)
+ * @param {string} type - Toast type (success, error, info, create, delete, update)
  */
 function showToast(message, type = 'info') {
     const container = ensureToastContainer();
@@ -116,8 +123,12 @@ function showToast(message, type = 'info') {
     toast.appendChild(text);
     container.appendChild(toast);
 
+    // Auto-remove after duration
     setTimeout(() => {
-        toast.remove();
+        toast.style.animation = 'toastFadeOut 0.4s ease-in forwards';
+        setTimeout(() => {
+            toast.remove();
+        }, 400);
     }, TOAST_DURATION);
 }
 /**
@@ -372,7 +383,7 @@ function executeAndToast(id, action, params = {}) {
     handleComponentAction(id, action, params, {
         onSuccess: (res) => {
             console.log('[Action] Action succeeded:', res);
-            showToast(res.message, 'success');
+            showToast(`🔄 ${res.message}`, 'success');
             autoRefreshStats();
             // Optimistically update UI meta and timestamps
             const item = el.result?.querySelector(`.component-accordion__item[data-id="${String(id)}"]`);
@@ -449,7 +460,7 @@ function handleCreateClick() {
             console.log('[Action] Component created:', info);
             callbacks.updateSelect();
             callbacks.clearInput();
-            callbacks.showToast(`Component "${info.name}" (${info.type}) added successfully!`, 'success');
+            callbacks.showToast(`✨ Component "${info.name}" created!`, 'success');
             callbacks.displayResult(`Component "${info.name}" added successfully.`, 'success');
             autoRefreshStats();
         },
@@ -469,7 +480,7 @@ function handleRemoveClick() {
         onSuccess: (res) => {
             callbacks.updateSelect();
             callbacks.clearInput();
-            callbacks.showToast(res.message, 'success');
+            callbacks.showToast(`🗑️ ${res.message}`, 'success');
             callbacks.displayResult(res.message, 'success');
             autoRefreshStats();
         },
