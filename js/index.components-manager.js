@@ -34,6 +34,25 @@ const el = {
     eventLog: null,
 };
 
+// Track if stats dashboard is currently visible
+let statsVisible = false;
+
+/**
+ * Refresh statistics if dashboard is visible
+ */
+function autoRefreshStats() {
+    if (statsVisible) {
+        handleGetStats({
+            onSuccess: (stats) => {
+                displayStats(stats);
+            },
+            onError: () => {
+                // Silent fail for auto-refresh
+            }
+        });
+    }
+}
+
 /**
  * Cache all DOM elements
  */
@@ -351,6 +370,7 @@ function executeAndToast(id, action, params = {}) {
     handleComponentAction(id, action, params, {
         onSuccess: (res) => {
             showToast(res.message, 'success');
+            autoRefreshStats();
             // Optimistically update UI meta and timestamps
             const item = el.result?.querySelector(`.component-accordion__item[data-id="${String(id)}"]`);
             if (item) {
@@ -427,6 +447,7 @@ function handleCreateClick() {
             callbacks.clearInput();
             callbacks.showToast(`Component "${info.name}" (${info.type}) added successfully!`, 'success');
             callbacks.displayResult(`Component "${info.name}" added successfully.`, 'success');
+            autoRefreshStats();
         },
         onError: (err) => {
             callbacks.showToast(String(err), 'error');
@@ -446,6 +467,7 @@ function handleRemoveClick() {
             callbacks.clearInput();
             callbacks.showToast(res.message, 'success');
             callbacks.displayResult(res.message, 'success');
+            autoRefreshStats();
         },
         onError: (err) => {
             callbacks.showToast(String(err), 'error');
@@ -475,6 +497,7 @@ function handleListClick() {
  * Event handler for stats button click
  */
 function handleStatsClick() {
+    statsVisible = true;
     handleGetStats({
         onSuccess: (stats) => {
             displayStats(stats);
@@ -563,6 +586,7 @@ function displayStats(stats) {
     `;
     el.statsDashboard.querySelector('.component-action__close-btn')?.addEventListener('click', () => {
         el.statsDashboard.innerHTML = '';
+        statsVisible = false;
     });
 }
 
