@@ -461,12 +461,10 @@ function handleCreateClick() {
             callbacks.updateSelect();
             callbacks.clearInput();
             callbacks.showToast(`✨ Component "${info.name}" created!`, 'success');
-            callbacks.displayResult(`Component "${info.name}" added successfully.`, 'success');
             autoRefreshStats();
         },
         onError: (err) => {
             callbacks.showToast(String(err), 'error');
-            callbacks.displayResult(String(err), 'error');
         }
     });
 }
@@ -481,12 +479,10 @@ function handleRemoveClick() {
             callbacks.updateSelect();
             callbacks.clearInput();
             callbacks.showToast(`🗑️ ${res.message}`, 'success');
-            callbacks.displayResult(res.message, 'success');
             autoRefreshStats();
         },
         onError: (err) => {
             callbacks.showToast(String(err), 'error');
-            callbacks.displayResult(String(err), 'error');
         }
     });
 }
@@ -559,7 +555,6 @@ function handleResetClick() {
             el.statsDashboard.innerHTML = '';
             el.eventLog.innerHTML = '';
             callbacks.showToast(res.message, 'success');
-            callbacks.displayResult(res.message, 'success');
         },
         onError: (err) => {
             callbacks.showToast(String(err), 'error');
