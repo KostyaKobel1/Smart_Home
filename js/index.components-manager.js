@@ -43,14 +43,11 @@ let statsVisible = false;
 function autoRefreshStats() {
     console.log('[Stats] Auto-refresh triggered. Visible:', statsVisible);
     if (statsVisible) {
-        console.log('[Stats] Stats visible - fetching updated stats');
         handleGetStats({
             onSuccess: (stats) => {
-                console.log('[Stats] Stats received:', stats);
                 displayStats(stats);
             },
             onError: (error) => {
-                console.warn('[Stats] Auto-refresh error:', error);
                 // Silent fail for auto-refresh
             }
         });
