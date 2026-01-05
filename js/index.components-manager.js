@@ -146,32 +146,39 @@ function displayComponentsAccordion(components) {
     el.result.className = 'component-action__result component-action__result--success';
     el.result.innerHTML = '';
 
+    const headerWrapper = document.createElement('div');
+    headerWrapper.className = 'component-action__header-wrapper';
+    
     const heading = document.createElement('strong');
     heading.className = 'component-action__result-heading';
     heading.textContent = `Active Components (${components.length}):`;
-    el.result.appendChild(heading);
+    
+    const closeBtn = createCloseButton(el.result);
+    headerWrapper.appendChild(heading);
+    headerWrapper.appendChild(closeBtn);
+    el.result.appendChild(headerWrapper);
 
     const container = document.createElement('div');
     container.className = 'component-accordion';
 
-    components.forEach(c => {
+    components.forEach(component => {
         const item = document.createElement('div');
         item.className = 'component-accordion__item';
-        item.dataset.id = String(c.id);
-        item.dataset.type = String(c.type);
+        item.dataset.id = String(component.id);
+        item.dataset.type = String(component.type);
 
         const header = document.createElement('div');
         header.className = 'component-accordion__header';
         header.innerHTML = `
-            <span class="component-accordion__title">${c.name}</span>
-            <span class="component-accordion__meta">${c.type} • ${c.status}</span>
+            <span class="component-accordion__title">${component.name}</span>
+            <span class="component-accordion__meta">${component.type} • ${component.status}</span>
             <span class="component-accordion__chevron">▾</span>
         `;
 
         const panel = document.createElement('div');
         panel.className = 'component-accordion__panel';
 
-        const controls = buildActionControls(c);
+        const controls = buildActionControls(component);
         panel.appendChild(controls);
 
         header.addEventListener('click', () => {
@@ -196,16 +203,16 @@ function displayComponentsAccordion(components) {
  * @param {Object} c - Component info
  * @returns {HTMLElement}
  */
-function buildActionControls(c) {
+function buildActionControls(component) {
     const wrap = document.createElement('div');
     wrap.className = 'component-actions';
 
-    const actions = Array.isArray(c.actions) ? c.actions : [];
-    const byKey = new Map(actions.map(a => [String(a.key).toLowerCase(), a]));
+    const actions = Array.isArray(component.actions) ? component.actions : [];
+    const actionByKey = new Map(actions.map(action => [String(action.key).toLowerCase(), action]));
 
     // Grouped power controls
     const powerKeys = ['on', 'off', 'toggle'];
-    const hasPower = powerKeys.some(k => byKey.has(k));
+    const hasPower = powerKeys.some(key => actionByKey.has(key));
     if (hasPower) {
         const row = document.createElement('div');
         row.className = 'component-actions__row';
@@ -214,12 +221,12 @@ function buildActionControls(c) {
         label.textContent = 'Power';
         row.appendChild(label);
 
-        powerKeys.forEach(k => {
-            if (!byKey.has(k)) return;
+        powerKeys.forEach(key => {
+            if (!actionByKey.has(key)) return;
             const btn = document.createElement('button');
             btn.className = 'component-action__btn component-action__btn--mini';
-            btn.textContent = byKey.get(k).label || k;
-            btn.addEventListener('click', () => executeAndToast(c.id, k));
+            btn.textContent = actionByKey.get(key).label || key;
+            btn.addEventListener('click', () => executeAndToast(component.id, key));
             row.appendChild(btn);
         });
         wrap.appendChild(row);
@@ -235,56 +242,56 @@ function buildActionControls(c) {
         { label: 'Info', keys: ['getchannels'] },
     ];
     groupedSets.forEach(group => {
-        const present = group.keys.filter(k => byKey.has(k));
-        if (present.length === 0) return;
+        const presentKeys = group.keys.filter(key => actionByKey.has(key));
+        if (presentKeys.length === 0) return;
         const row = document.createElement('div');
         row.className = 'component-actions__row';
         const label = document.createElement('span');
         label.className = 'component-actions__label';
         label.textContent = group.label;
         row.appendChild(label);
-        present.forEach(k => {
-            const spec = byKey.get(k);
+        presentKeys.forEach(key => {
+            const actionSpec = actionByKey.get(key);
             const btn = document.createElement('button');
             btn.className = 'component-action__btn component-action__btn--mini';
-            btn.textContent = spec.label || k;
-            btn.addEventListener('click', () => executeAndToast(c.id, k));
+            btn.textContent = actionSpec.label || key;
+            btn.addEventListener('click', () => executeAndToast(component.id, key));
             row.appendChild(btn);
         });
         wrap.appendChild(row);
         // remove from processing list
-        present.forEach(k => byKey.delete(k));
+        presentKeys.forEach(key => actionByKey.delete(key));
     });
 
     // Render remaining actions
-    byKey.forEach(spec => {
-        const key = String(spec.key).toLowerCase();
-        const kind = String(spec.kind || 'button').toLowerCase();
+    actionByKey.forEach(actionSpec => {
+        const key = String(actionSpec.key).toLowerCase();
+        const kind = String(actionSpec.kind || 'button').toLowerCase();
         if (kind === 'range') {
             const row = document.createElement('div');
             row.className = 'component-actions__row';
             const label = document.createElement('span');
             label.className = 'component-actions__label';
-            label.textContent = spec.label || 'Adjust';
+            label.textContent = actionSpec.label || 'Adjust';
             const slider = document.createElement('input');
             slider.type = 'range';
-            if (typeof spec.min === 'number') slider.min = String(spec.min);
-            if (typeof spec.max === 'number') slider.max = String(spec.max);
-            if (typeof spec.value === 'number') slider.value = String(spec.value);
+            if (typeof actionSpec.min === 'number') slider.min = String(actionSpec.min);
+            if (typeof actionSpec.max === 'number') slider.max = String(actionSpec.max);
+            if (typeof actionSpec.value === 'number') slider.value = String(actionSpec.value);
             slider.className = 'component-actions__slider';
-            const val = document.createElement('span');
-            val.className = 'component-actions__value';
-            const unit = spec.unit ? String(spec.unit) : '';
-            val.textContent = `${slider.value}${unit}`;
-            slider.addEventListener('input', () => { val.textContent = `${slider.value}${unit}`; });
+            const valueDisplay = document.createElement('span');
+            valueDisplay.className = 'component-actions__value';
+            const unit = actionSpec.unit ? String(actionSpec.unit) : '';
+            valueDisplay.textContent = `${slider.value}${unit}`;
+            slider.addEventListener('input', () => { valueDisplay.textContent = `${slider.value}${unit}`; });
             const btn = document.createElement('button');
             btn.className = 'component-action__btn component-action__btn--mini';
             btn.textContent = 'Set';
             const paramName = getParamNameForAction(key);
-            btn.addEventListener('click', () => executeAndToast(c.id, key, { [paramName]: Number(slider.value) }));
+            btn.addEventListener('click', () => executeAndToast(component.id, key, { [paramName]: Number(slider.value) }));
             row.appendChild(label);
             row.appendChild(slider);
-            row.appendChild(val);
+            row.appendChild(valueDisplay);
             row.appendChild(btn);
             wrap.appendChild(row);
         } else {
@@ -292,11 +299,11 @@ function buildActionControls(c) {
             row.className = 'component-actions__row';
             const label = document.createElement('span');
             label.className = 'component-actions__label';
-            label.textContent = spec.label || key;
+            label.textContent = actionSpec.label || key;
             const btn = document.createElement('button');
             btn.className = 'component-action__btn component-action__btn--mini';
-            btn.textContent = spec.label || key;
-            btn.addEventListener('click', () => executeAndToast(c.id, key));
+            btn.textContent = actionSpec.label || key;
+            btn.addEventListener('click', () => executeAndToast(component.id, key));
             row.appendChild(label);
             row.appendChild(btn);
             wrap.appendChild(row);
@@ -307,11 +314,22 @@ function buildActionControls(c) {
     footer.className = 'component-actions__footer';
     const updated = document.createElement('span');
     updated.className = 'component-actions__updated';
-    updated.textContent = `Updated: ${new Date(c.lastUpdated).toLocaleString()}`;
+    updated.textContent = `Updated: ${new Date(component.lastUpdated).toLocaleString()}`;
     footer.appendChild(updated);
     wrap.appendChild(footer);
 
     return wrap;
+}
+
+function createCloseButton(container) {
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'component-action__close-btn';
+    closeBtn.textContent = '✕';
+    closeBtn.setAttribute('aria-label', 'Close');
+    closeBtn.addEventListener('click', () => {
+        container.innerHTML = '';
+    });
+    return closeBtn;
 }
 
 function getParamNameForAction(key) {
@@ -519,7 +537,10 @@ function displayStats(stats) {
     
     el.statsDashboard.innerHTML = `
         <div class="stats-container">
-            <h3 class="stats-title">📊 System Statistics</h3>
+            <div class="stats-header">
+                <h3 class="stats-title">📊 System Statistics</h3>
+                <button class="component-action__close-btn" aria-label="Close">✕</button>
+            </div>
             <div class="stats-grid">
                 <div class="stat-item">
                     <span class="stat-label">Total Components</span>
@@ -540,6 +561,9 @@ function displayStats(stats) {
             </div>
         </div>
     `;
+    el.statsDashboard.querySelector('.component-action__close-btn')?.addEventListener('click', () => {
+        el.statsDashboard.innerHTML = '';
+    });
 }
 
 /**
@@ -549,7 +573,18 @@ function displayEventLog(log) {
     if (!el.eventLog) return;
     
     if (!Array.isArray(log) || log.length === 0) {
-        el.eventLog.innerHTML = '<div class="event-log-empty">No events logged yet</div>';
+        el.eventLog.innerHTML = `
+            <div class="event-log-container">
+                <div class="event-log-header">
+                    <h3 class="event-log-title">📋 Event Log</h3>
+                    <button class="component-action__close-btn" aria-label="Close">✕</button>
+                </div>
+                <div class="event-log-empty">No events logged yet</div>
+            </div>
+        `;
+        el.eventLog.querySelector('.component-action__close-btn')?.addEventListener('click', () => {
+            el.eventLog.innerHTML = '';
+        });
         return;
     }
     
@@ -567,10 +602,16 @@ function displayEventLog(log) {
     
     el.eventLog.innerHTML = `
         <div class="event-log-container">
-            <h3 class="event-log-title">📋 Event Log (Last 20)</h3>
+            <div class="event-log-header">
+                <h3 class="event-log-title">📋 Event Log (Last 20)</h3>
+                <button class="component-action__close-btn" aria-label="Close">✕</button>
+            </div>
             <div class="event-log-list">${logHtml}</div>
         </div>
     `;
+    el.eventLog.querySelector('.component-action__close-btn')?.addEventListener('click', () => {
+        el.eventLog.innerHTML = '';
+    });
 }
 /**
  * Bind event listeners to buttons

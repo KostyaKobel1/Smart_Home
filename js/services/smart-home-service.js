@@ -66,104 +66,103 @@ export class SmartHomeService {
   }
 
   listComponents() {
-    return Array.from(this.components.values()).map(c => c.getInfo());
+    return Array.from(this.components.values()).map(component => component.getInfo());
   }
 
   executeAction(id, action, params = {}) {
-    const c = this.components.get(id);
-    if (!c) return { success: false, message: 'Component not found' };
+    const component = this.components.get(id);
+    if (!component) return { success: false, message: 'Component not found' };
 
     let result = { success: false, message: 'Unknown action' };
     switch ((action || '').toLowerCase()) {
       case 'toggle':
-        result = c.status === 'online' ? c.turnOff() : c.turnOn();
+        result = component.status === 'online' ? component.turnOff() : component.turnOn();
         break;
       case 'on':
-        result = c.turnOn();
+        result = component.turnOn();
         break;
       case 'off':
-        result = c.turnOff();
+        result = component.turnOff();
         break;
       case 'setbrightness':
-        if (c instanceof Light) result = c.setBrightness(params.brightness);
+        if (component instanceof Light) result = component.setBrightness(params.brightness);
         else result = { success: false, message: 'Action not supported' };
         break;
       case 'settemperature':
-        if (c instanceof Thermostat) result = c.setTemperature(params.temperature);
+        if (component instanceof Thermostat) result = component.setTemperature(params.temperature);
         else result = { success: false, message: 'Action not supported' };
         break;
       case 'lock':
-        if (c instanceof SmartLock) result = c.lock();
+        if (component instanceof SmartLock) result = component.lock();
         else result = { success: false, message: 'Action not supported' };
         break;
       case 'unlock':
-        if (c instanceof SmartLock) result = c.unlock();
+        if (component instanceof SmartLock) result = component.unlock();
         else result = { success: false, message: 'Action not supported' };
         break;
       case 'record':
-        if (c instanceof Camera) result = c.startRecording();
+        if (component instanceof Camera) result = component.startRecording();
         else result = { success: false, message: 'Action not supported' };
         break;
       case 'stop':
-        if (c instanceof Camera) result = c.stopRecording();
+        if (component instanceof Camera) result = component.stopRecording();
         else result = { success: false, message: 'Action not supported' };
         break;
-      // Television actions
       case 'setvolume':
-        if (c instanceof Television) result = c.setVolume(params.volume);
+        if (component instanceof Television) result = component.setVolume(params.volume);
         else result = { success: false, message: 'Action not supported' };
         break;
       case 'setchannel':
-        if (c instanceof Television) result = c.setChannel(params.channel);
+        if (component instanceof Television) result = component.setChannel(params.channel);
         else result = { success: false, message: 'Action not supported' };
         break;
       case 'mute':
-        if (c instanceof Television) result = c.mute();
+        if (component instanceof Television) result = component.mute();
         else result = { success: false, message: 'Action not supported' };
         break;
       case 'unmute':
-        if (c instanceof Television) result = c.unmute();
+        if (component instanceof Television) result = component.unmute();
         else result = { success: false, message: 'Action not supported' };
         break;
       case 'channelup':
-        if (c instanceof Television) result = c.channelUp();
+        if (component instanceof Television) result = component.channelUp();
         else result = { success: false, message: 'Action not supported' };
         break;
       case 'channeldown':
-        if (c instanceof Television) result = c.channelDown();
+        if (component instanceof Television) result = component.channelDown();
         else result = { success: false, message: 'Action not supported' };
         break;
       case 'volumeup':
-        if (c instanceof Television) result = c.volumeUp();
+        if (component instanceof Television) result = component.volumeUp();
         else result = { success: false, message: 'Action not supported' };
         break;
       case 'volumedown':
-        if (c instanceof Television) result = c.volumeDown();
+        if (component instanceof Television) result = component.volumeDown();
         else result = { success: false, message: 'Action not supported' };
         break;
       case 'inputtv':
-        if (c instanceof Television) result = c.inputTV();
+        if (component instanceof Television) result = component.inputTV();
         else result = { success: false, message: 'Action not supported' };
         break;
       case 'inputhdmi1':
-        if (c instanceof Television) result = c.inputHDMI1();
+        if (component instanceof Television) result = component.inputHDMI1();
         else result = { success: false, message: 'Action not supported' };
         break;
       case 'inputhdmi2':
-        if (c instanceof Television) result = c.inputHDMI2();
+        if (component instanceof Television) result = component.inputHDMI2();
         else result = { success: false, message: 'Action not supported' };
         break;
       case 'inputusb':
-        if (c instanceof Television) result = c.inputUSB();
+        if (component instanceof Television) result = component.inputUSB();
         else result = { success: false, message: 'Action not supported' };
         break;
       case 'getchannels':
-        if (c instanceof Television) result = c.getChannels();
+        if (component instanceof Television) result = component.getChannels();
         else result = { success: false, message: 'Action not supported' };
         break;
     }
 
-    this.logEvent('ACTION', `${action} on "${c.name}": ${result.message}`);
+    this.logEvent('ACTION', `${action} on "${component.name}": ${result.message}`);
     this.save();
     return result;
   }
@@ -281,13 +280,13 @@ export class SmartHomeService {
   }
 
   stats() {
-    const list = this.listComponents();
-    const total = list.length;
-    const online = list.filter(c => c.status === 'online').length;
-    const byType = list.reduce((acc, c) => {
-      acc[c.type] = acc[c.type] || 0;
-      acc[c.type]++;
-      return acc;
+    const componentList = this.listComponents();
+    const total = componentList.length;
+    const online = componentList.filter(component => component.status === 'online').length;
+    const byType = componentList.reduce((accumulator, component) => {
+      accumulator[component.type] = accumulator[component.type] || 0;
+      accumulator[component.type]++;
+      return accumulator;
     }, {});
     return {
       total,
