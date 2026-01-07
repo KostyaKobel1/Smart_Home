@@ -36,6 +36,8 @@ const el = {
 
 // Track if stats dashboard is currently visible
 let statsVisible = false;
+// Track if components list is currently visible
+let componentsListVisible = false;
 
 /**
  * Refresh statistics if dashboard is visible
@@ -46,6 +48,24 @@ function autoRefreshStats() {
         handleGetStats({
             onSuccess: (stats) => {
                 displayStats(stats);
+            },
+            onError: (error) => {
+                // Silent fail for auto-refresh
+            }
+        });
+    }
+}
+
+/**
+ * Refresh components list if it is visible
+ */
+function autoRefreshComponentsList() {
+    console.log('[ComponentsList] Auto-refresh triggered. Visible:', componentsListVisible);
+    if (componentsListVisible) {
+        handleGetComponents({
+            onSuccess: (list) => {
+                const items = Array.isArray(list) ? list : [];
+                displayComponentsAccordion(items);
             },
             onError: (error) => {
                 // Silent fail for auto-refresh
@@ -184,7 +204,10 @@ function displayComponentsAccordion(components) {
     heading.className = 'component-action__result-heading';
     heading.textContent = `Active Components (${components.length}):`;
     
-    const closeBtn = createCloseButton(el.result);
+    const closeBtn = createCloseButton(el.result, () => {
+        componentsListVisible = false;
+        console.log('[ComponentsList] List closed. Visible set to false');
+    });
     headerWrapper.appendChild(heading);
     headerWrapper.appendChild(closeBtn);
     el.result.appendChild(headerWrapper);
@@ -352,13 +375,22 @@ function buildActionControls(component) {
     return wrap;
 }
 
-function createCloseButton(container) {
+/**
+ * Create close button with callback
+ * @param {HTMLElement} container - Container element to clear
+ * @param {Function} onClose - Optional callback to execute on close
+ * @returns {HTMLElement} Close button element
+ */
+function createCloseButton(container, onClose = null) {
     const closeBtn = document.createElement('button');
     closeBtn.className = 'component-action__close-btn';
     closeBtn.textContent = '✕';
     closeBtn.setAttribute('aria-label', 'Close');
     closeBtn.addEventListener('click', () => {
         container.innerHTML = '';
+        if (typeof onClose === 'function') {
+            onClose();
+        }
     });
     return closeBtn;
 }
@@ -462,6 +494,7 @@ function handleCreateClick() {
             callbacks.clearInput();
             callbacks.showToast(`✨ Component "${info.name}" created!`, 'success');
             autoRefreshStats();
+            autoRefreshComponentsList();
         },
         onError: (err) => {
             callbacks.showToast(String(err), 'error');
@@ -480,6 +513,7 @@ function handleRemoveClick() {
             callbacks.clearInput();
             callbacks.showToast(`🗑️ ${res.message}`, 'success');
             autoRefreshStats();
+            autoRefreshComponentsList();
         },
         onError: (err) => {
             callbacks.showToast(String(err), 'error');
@@ -491,6 +525,7 @@ function handleRemoveClick() {
  * Event handler for list button click
  */
 function handleListClick() {
+    componentsListVisible = true;
     handleGetComponents({
         onSuccess: (list) => {
             const items = Array.isArray(list) ? list : [];
@@ -554,6 +589,8 @@ function handleResetClick() {
             el.result.innerHTML = '';
             el.statsDashboard.innerHTML = '';
             el.eventLog.innerHTML = '';
+            statsVisible = false;
+            componentsListVisible = false;
             callbacks.showToast(res.message, 'success');
         },
         onError: (err) => {
