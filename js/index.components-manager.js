@@ -578,23 +578,56 @@ function handleEventLogClick() {
  * Event handler for reset button click
  */
 function handleResetClick() {
-    if (!confirm('⚠️ Are you sure you want to reset all data? This cannot be undone.')) {
-        return;
-    }
-    
-    handleReset({
-        onSuccess: (res) => {
-            callbacks.updateSelect();
-            callbacks.clearInput();
-            el.result.innerHTML = '';
-            el.statsDashboard.innerHTML = '';
-            el.eventLog.innerHTML = '';
-            statsVisible = false;
-            componentsListVisible = false;
-            callbacks.showToast(res.message, 'success');
+    // First check if there's any data to reset
+    handleGetStats({
+        onSuccess: (stats) => {
+            if (stats.total === 0) {
+                callbacks.showToast('⚠️ No data to reset. System is already empty.', 'info');
+                return;
+            }
+            
+            // If there's data, show confirmation dialog
+            if (!confirm('⚠️ Are you sure you want to reset all data? This cannot be undone.')) {
+                return;
+            }
+            
+            handleReset({
+                onSuccess: (res) => {
+                    callbacks.updateSelect();
+                    callbacks.clearInput();
+                    el.result.innerHTML = '';
+                    el.statsDashboard.innerHTML = '';
+                    el.eventLog.innerHTML = '';
+                    statsVisible = false;
+                    componentsListVisible = false;
+                    callbacks.showToast(res.message, 'success');
+                },
+                onError: (err) => {
+                    callbacks.showToast(String(err), 'error');
+                }
+            });
         },
         onError: (err) => {
-            callbacks.showToast(String(err), 'error');
+            // If can't get stats, try reset anyway
+            if (!confirm('⚠️ Are you sure you want to reset all data? This cannot be undone.')) {
+                return;
+            }
+            
+            handleReset({
+                onSuccess: (res) => {
+                    callbacks.updateSelect();
+                    callbacks.clearInput();
+                    el.result.innerHTML = '';
+                    el.statsDashboard.innerHTML = '';
+                    el.eventLog.innerHTML = '';
+                    statsVisible = false;
+                    componentsListVisible = false;
+                    callbacks.showToast(res.message, 'success');
+                },
+                onError: (err) => {
+                    callbacks.showToast(String(err), 'error');
+                }
+            });
         }
     });
 }

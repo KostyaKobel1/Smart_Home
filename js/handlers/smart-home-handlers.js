@@ -84,7 +84,7 @@ export function handleGetComponents({ onSuccess, onError } = {}) {
 export function handleReset({ onSuccess, onError } = {}) {
   try {
     const res = smartHomeService.reset();
-    onSuccess?.(res);
+    res.success ? onSuccess?.(res) : onError?.(res.message);
   } catch (e) {
     onError?.(e.message || 'Reset error');
   }

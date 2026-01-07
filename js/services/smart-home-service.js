@@ -229,6 +229,11 @@ export class SmartHomeService {
    * Reset all data (clear components, counter, and event log)
    */
   reset() {
+    // Check if there's any data to reset
+    if (this.components.size === 0) {
+      return { success: false, message: 'No data to reset. System is already empty.' };
+    }
+
     this.components.clear();
     this.componentCounter = 0;
     this.eventLog = [];
