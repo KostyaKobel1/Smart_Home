@@ -1,5 +1,4 @@
 import { handleCreateComponent, handleDeleteComponent, handleGetComponents, handleReset, handleGetStats, handleGetEventLog, handleComponentAction } from './handlers/smart-home-handlers.js';
-import { updateSelectOptions, getSelectedComponent } from './handlers/component-select.js';
 
 // Constants
 const TOAST_DURATION = 3000; // 3 seconds
@@ -8,7 +7,7 @@ const DOM_ELEMENT_IDS = {
     typeSelect: 'component-type-select',
     roomInput: 'component-room-input',
     roomFilter: 'component-room-filter',
-    roomSelect: 'component-room-select',
+    select: 'component-action__select',
     createBtn: 'create-component-btn',
     removeBtn: 'remove-component-btn',
     listBtn: 'get-full-list-of-components-btn',
@@ -27,7 +26,6 @@ const el = {
     typeSelect: null,
     roomInput: null,
     roomFilter: null,
-    roomSelect: null,
     createBtn: null,
     removeBtn: null,
     listBtn: null,
@@ -122,7 +120,6 @@ function cacheElements() {
     el.typeSelect = document.getElementById(DOM_ELEMENT_IDS.typeSelect);
     el.roomInput = document.getElementById(DOM_ELEMENT_IDS.roomInput);
     el.roomFilter = document.getElementById(DOM_ELEMENT_IDS.roomFilter);
-    el.roomSelect = document.getElementById(DOM_ELEMENT_IDS.roomSelect);
     el.createBtn = document.getElementById(DOM_ELEMENT_IDS.createBtn);
     el.removeBtn = document.getElementById(DOM_ELEMENT_IDS.removeBtn);
     el.listBtn = document.getElementById(DOM_ELEMENT_IDS.listBtn);
@@ -618,9 +615,6 @@ const callbacks = {
     showToast,
     displayResult,
     displayComponentsList,
-    updateSelect: () => {
-        populateRoomSelectForRemoval();
-    },
     clearInput: () => { if (el.input) el.input.value = ''; },
 };
 
@@ -706,7 +700,6 @@ function performReset(mode, overlay) {
 
     handleReset(mode, {
         onSuccess: (res) => {
-            callbacks.updateSelect();
             callbacks.clearInput();
 
             if (mode === 'factory') {
@@ -737,6 +730,137 @@ function performReset(mode, overlay) {
 }
 
 /**
+ * Create remove component dialog
+ */
+function createRemoveDialog(onConfirm, onCancel) {
+    const overlay = document.createElement('div');
+    overlay.className = 'reset-dialog-overlay';
+
+    const dialog = document.createElement('div');
+    dialog.className = 'reset-dialog';
+
+    const title = document.createElement('h3');
+    title.textContent = 'Remove Component';
+
+    const description = document.createElement('p');
+    description.textContent = 'Select room and component to remove:';
+
+    // Room select
+    const roomLabel = document.createElement('label');
+    roomLabel.textContent = 'Room';
+    roomLabel.style.display = 'block';
+    roomLabel.style.marginTop = '0.75rem';
+    roomLabel.style.marginBottom = '0.25rem';
+    roomLabel.style.fontWeight = '600';
+
+    const roomSelect = document.createElement('select');
+    roomSelect.className = 'reset-dialog__select';
+    roomSelect.innerHTML = '<option value="">Loading rooms...</option>';
+
+    // Component select
+    const componentLabel = document.createElement('label');
+    componentLabel.textContent = 'Component';
+    componentLabel.style.display = 'block';
+    componentLabel.style.marginTop = '0.75rem';
+    componentLabel.style.marginBottom = '0.25rem';
+    componentLabel.style.fontWeight = '600';
+
+    const componentSelect = document.createElement('select');
+    componentSelect.className = 'reset-dialog__select';
+    componentSelect.innerHTML = '<option value="">Select room first</option>';
+
+    // Populate rooms
+    handleGetComponents({
+        onSuccess: (list) => {
+            const items = Array.isArray(list) ? list : [];
+            const rooms = Array.from(new Set(items.map(c => String(c.room || 'Unassigned')))).sort();
+            roomSelect.innerHTML = '';
+            const allOpt = document.createElement('option');
+            allOpt.value = '';
+            allOpt.textContent = 'All Rooms';
+            roomSelect.appendChild(allOpt);
+            rooms.forEach(room => {
+                const opt = document.createElement('option');
+                opt.value = room;
+                opt.textContent = room;
+                roomSelect.appendChild(opt);
+            });
+            // Trigger initial component population
+            updateComponentSelectByRoom('', items, componentSelect);
+        },
+        onError: () => {
+            roomSelect.innerHTML = '<option value="">Error loading rooms</option>';
+        }
+    });
+
+    // Update components when room changes
+    roomSelect.addEventListener('change', () => {
+        handleGetComponents({
+            onSuccess: (list) => {
+                const items = Array.isArray(list) ? list : [];
+                updateComponentSelectByRoom(roomSelect.value, items, componentSelect);
+            },
+            onError: () => {}
+        });
+    });
+
+    const buttons = document.createElement('div');
+    buttons.className = 'reset-dialog__buttons';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.className = 'component-action__btn component-action__btn--remove';
+    cancelBtn.addEventListener('click', () => onCancel?.(overlay));
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.textContent = 'Remove';
+    confirmBtn.className = 'component-action__btn component-action__btn--reset';
+    confirmBtn.addEventListener('click', () => {
+        const componentId = componentSelect.value;
+        if (!componentId) {
+            callbacks.showToast('Please select a component to remove', 'error');
+            return;
+        }
+        onConfirm?.(componentId, overlay);
+    });
+
+    buttons.appendChild(cancelBtn);
+    buttons.appendChild(confirmBtn);
+
+    dialog.appendChild(title);
+    dialog.appendChild(description);
+    dialog.appendChild(roomLabel);
+    dialog.appendChild(roomSelect);
+    dialog.appendChild(componentLabel);
+    dialog.appendChild(componentSelect);
+    dialog.appendChild(buttons);
+    overlay.appendChild(dialog);
+    return { overlay, roomSelect, componentSelect, confirmBtn, cancelBtn };
+}
+
+/**
+ * Update component select options based on selected room
+ */
+function updateComponentSelectByRoom(room, items, componentSelect) {
+    const filtered = room ? items.filter(c => String(c.room || 'Unassigned') === room) : items;
+    componentSelect.innerHTML = '';
+    if (filtered.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = room ? `No components in ${room}` : 'No components available';
+        opt.disabled = true;
+        componentSelect.appendChild(opt);
+    } else {
+        filtered.forEach(component => {
+            const opt = document.createElement('option');
+            opt.value = String(component.id);
+            opt.textContent = `${component.name} (${component.type}${component.room ? ' • ' + component.room : ''})`;
+            componentSelect.appendChild(opt);
+        });
+    }
+}
+
+/**
  * Event handler for create button click
  */
 function handleCreateClick() {
@@ -746,7 +870,6 @@ function handleCreateClick() {
     handleCreateComponent(name, type, room, {
         onSuccess: (info) => {
             console.log('[Action] Component created:', info);
-            callbacks.updateSelect();
             callbacks.clearInput();
             if (el.roomInput) el.roomInput.value = '';
             callbacks.showToast(`✨ Component "${info.name}" created!`, 'success');
@@ -764,20 +887,29 @@ function handleCreateClick() {
  * Event handler for remove button click
  */
 function handleRemoveClick() {
-    const id = getSelectedComponent(el.select);
-    handleDeleteComponent(id, {
-        onSuccess: (res) => {
-            callbacks.updateSelect();
-            callbacks.clearInput();
-            callbacks.showToast(`🗑️ ${res.message}`, 'success');
-            autoRefreshStats();
-            autoRefreshComponentsList();
-            autoRefreshEventLog();
+    const { overlay } = createRemoveDialog(
+        (componentId, ov) => {
+            if (!confirm('Are you sure you want to remove this component?')) {
+                closeResetDialog(ov);
+                return;
+            }
+            handleDeleteComponent(componentId, {
+                onSuccess: (res) => {
+                    callbacks.showToast(`🗑️ ${res.message}`, 'success');
+                    autoRefreshStats();
+                    autoRefreshComponentsList();
+                    autoRefreshEventLog();
+                    closeResetDialog(ov);
+                },
+                onError: (err) => {
+                    callbacks.showToast(String(err), 'error');
+                    closeResetDialog(ov);
+                }
+            });
         },
-        onError: (err) => {
-            callbacks.showToast(String(err), 'error');
-        }
-    });
+        closeResetDialog
+    );
+    document.body.appendChild(overlay);
 }
 
 /**
@@ -1037,9 +1169,6 @@ function bindEvents() {
     el.statsBtn?.addEventListener('click', handleStatsClick);
     el.eventLogBtn?.addEventListener('click', handleEventLogClick);
     el.resetBtn?.addEventListener('click', handleResetClick);
-    el.roomSelect?.addEventListener('change', () => {
-        updateSelectOptionsByRoom(el.roomSelect.value);
-    });
     el.roomFilter?.addEventListener('change', () => {
         if (el.roomInput) {
             el.roomInput.value = getSelectedRoomFilter() || '';
@@ -1100,7 +1229,6 @@ function init() {
     }
 
     bindEvents();
-    populateRoomSelectForRemoval();
 }
 
 if (document.readyState === 'loading') {

@@ -61,22 +61,11 @@
           <option value="Garage"></option>
           <option value="Balcony"></option>
         </datalist>
-        <label for="component-room-select" class="component-action__label">
-          Select room to remove from
-        </label>
-        <select
-          name="component-room-select"
-          id="component-room-select"
-          class="component-action__input"
-        >
-          <option value="">All Rooms</option>
-        </select>
-        <label for="component-action__select" class="component-action__label">
-          Select component to remove
-        </label>
+        <!-- Hidden select for backward compatibility -->
         <select
           name="component-action__select"
           id="component-action__select"
+          style="display: none"
         ></select>
       </div>
     </form>
