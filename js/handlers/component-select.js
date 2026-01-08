@@ -21,7 +21,8 @@ export function updateSelectOptions(selectElement) {
     components.forEach(c => {
         const option = document.createElement('option');
         option.value = String(c.id);
-        option.textContent = `${c.name} (${c.type})`;
+        const room = c.room ? ` • ${c.room}` : '';
+        option.textContent = `${c.name} (${c.type}${room})`;
         selectElement.appendChild(option);
     });
 }

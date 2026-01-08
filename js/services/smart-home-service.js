@@ -23,31 +23,31 @@ export class SmartHomeService {
  *   stats/list -> derived from in-memory state
  */
 
-  createComponent(name, type = 'generic') {
+  createComponent(name, type = 'generic', room = 'Unassigned') {
     const id = ++this.componentCounter;
     let component;
     switch ((type || '').toLowerCase()) {
       case 'light':
-        component = new Light(id, name);
+        component = new Light(id, name, 100, room);
         break;
       case 'thermostat':
-        component = new Thermostat(id, name);
+        component = new Thermostat(id, name, 22, room);
         break;
       case 'lock':
-        component = new SmartLock(id, name);
+        component = new SmartLock(id, name, true, room);
         break;
       case 'camera':
-        component = new Camera(id, name);
+        component = new Camera(id, name, false, room);
         break;
       case 'television':
       case 'tv':
-        component = new Television(id, name);
+        component = new Television(id, name, room);
         break;
       default:
-        component = new Component(id, name, type || 'generic');
+        component = new Component(id, name, type || 'generic', 'offline', room);
     }
     this.components.set(id, component);
-    this.logEvent('CREATE', `Component "${name}" (${component.type}) created`);
+    this.logEvent('CREATE', `Component "${name}" (${component.type}) in room "${room}" created`);
     this.save();
     return component.getInfo();
   }
@@ -56,7 +56,7 @@ export class SmartHomeService {
     const component = this.components.get(id);
     if (!component) return { success: false, message: 'Component not found' };
     this.components.delete(id);
-    this.logEvent('DELETE', `Component "${component.name}" deleted`);
+    this.logEvent('DELETE', `Component "${component.name}" (${component.type}) in room "${component.room}" deleted`);
     this.save();
     return { success: true, message: `${component.name} removed` };
   }
@@ -162,7 +162,7 @@ export class SmartHomeService {
         break;
     }
 
-    this.logEvent('ACTION', `${action} on "${component.name}": ${result.message}`);
+    this.logEvent('ACTION', `${action} on "${component.name}" (${component.type}) in room "${component.room}": ${result.message}`);
     this.save();
     return result;
   }
@@ -281,30 +281,30 @@ export class SmartHomeService {
    */
   #createFromData(data) {
     if (!data || typeof data !== 'object') return null;
-    const { id, name, type, status, brightness, temperature, isLocked, isRecording, volume, currentChannel, inputSource, isMuted, lastUpdated } = data;
+    const { id, name, type, status, brightness, temperature, isLocked, isRecording, volume, currentChannel, inputSource, isMuted, lastUpdated, room } = data;
     let instance;
     switch ((type || '').toLowerCase()) {
       case 'light':
-        instance = new Light(id, name, typeof brightness === 'number' ? brightness : 100);
+        instance = new Light(id, name, typeof brightness === 'number' ? brightness : 100, room || 'Unassigned');
         break;
       case 'thermostat':
-        instance = new Thermostat(id, name, typeof temperature === 'number' ? temperature : 22);
+        instance = new Thermostat(id, name, typeof temperature === 'number' ? temperature : 22, room || 'Unassigned');
         break;
       case 'lock':
-        instance = new SmartLock(id, name, typeof isLocked === 'boolean' ? isLocked : true);
+        instance = new SmartLock(id, name, typeof isLocked === 'boolean' ? isLocked : true, room || 'Unassigned');
         break;
       case 'camera':
-        instance = new Camera(id, name, typeof isRecording === 'boolean' ? isRecording : false);
+        instance = new Camera(id, name, typeof isRecording === 'boolean' ? isRecording : false, room || 'Unassigned');
         break;
       case 'television':
-        instance = new Television(id, name);
+        instance = new Television(id, name, room || 'Unassigned');
         if (typeof volume === 'number') instance.volume = volume;
         if (typeof currentChannel === 'number') instance.currentChannel = currentChannel;
         if (typeof inputSource === 'string') instance.inputSource = inputSource;
         if (typeof isMuted === 'boolean') instance.isMuted = isMuted;
         break;
       default:
-        instance = new Component(id, name, type || 'generic');
+        instance = new Component(id, name, type || 'generic', 'offline', room || 'Unassigned');
     }
     if (status === 'online') instance.status = 'online';
     else instance.status = 'offline';
@@ -321,11 +321,18 @@ export class SmartHomeService {
       accumulator[component.type]++;
       return accumulator;
     }, {});
+    const byRoom = componentList.reduce((accumulator, component) => {
+      const room = component.room || 'Unassigned';
+      accumulator[room] = accumulator[room] || 0;
+      accumulator[room]++;
+      return accumulator;
+    }, {});
     return {
       total,
       online,
       offline: total - online,
       byType,
+      byRoom,
       lastEvent: this.eventLog[this.eventLog.length - 1] || null,
     };
   }

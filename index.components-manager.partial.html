@@ -14,14 +14,14 @@
     >
       <div class="component-action__input-group">
         <label for="component-name-input" class="component-action__label">
-          Enter component name
+          Component name
         </label>
         <input
           name="name"
           type="text"
           id="component-name-input"
           class="component-action__input"
-          placeholder="e.g., Living Room Light"
+          placeholder="e.g., Ceiling Light, Front Door Lock, Main Thermostat..."
           required
           autocomplete="off"
         />
@@ -39,8 +39,40 @@
           <option value="camera">Camera</option>
           <option value="television">Television (Extended)</option>
         </select>
+        <label for="component-room-input" class="component-action__label">
+          Room
+        </label>
+        <input
+          name="room"
+          type="text"
+          id="component-room-input"
+          class="component-action__input"
+          list="room-suggestions"
+          placeholder="e.g., Kitchen, Bedroom, Living Room"
+          autocomplete="off"
+        />
+        <datalist id="room-suggestions">
+          <option value="Living Room"></option>
+          <option value="Kitchen"></option>
+          <option value="Bedroom"></option>
+          <option value="Bathroom"></option>
+          <option value="Hallway"></option>
+          <option value="Office"></option>
+          <option value="Garage"></option>
+          <option value="Balcony"></option>
+        </datalist>
+        <label for="component-room-select" class="component-action__label">
+          Select room to remove from
+        </label>
+        <select
+          name="component-room-select"
+          id="component-room-select"
+          class="component-action__input"
+        >
+          <option value="">All Rooms</option>
+        </select>
         <label for="component-action__select" class="component-action__label">
-          Select component
+          Select component to remove
         </label>
         <select
           name="component-action__select"
@@ -92,6 +124,15 @@
         <span class="component-action__btn-icon">🔄</span>
         Reset Data
       </button>
+    </div>
+
+    <div class="component-action__filters">
+      <label for="component-room-filter" class="component-action__label"
+        >Filter by Room</label
+      >
+      <select id="component-room-filter" class="component-action__input">
+        <option value="">All Rooms</option>
+      </select>
     </div>
   </div>
 

@@ -19,6 +19,40 @@
       align-items: center;
       gap: 1rem;
       margin-bottom: var(--spacing-md);
+      .stats-header-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        .component-action__btn--mini {
+          padding: 0.5rem 1rem;
+          font-size: 0.85rem;
+          font-weight: 600;
+          border: 2px solid rgba(255, 255, 255, 0.4);
+          background-color: rgba(255, 255, 255, 0.15);
+          color: var(--alt-text-color);
+          border-radius: var(--border-radius);
+          cursor: pointer;
+          transition: all var(--transition-speed) ease;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          backdrop-filter: blur(10px);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          &:hover {
+            background-color: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.6);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+          }
+          &:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          }
+          &:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+          }
+        }
+      }
     }
     .stats-title {
       font-size: 1.5rem;
@@ -57,6 +91,29 @@
       }
     }
     .stats-by-type {
+      margin-top: var(--spacing-md);
+      padding-top: var(--spacing-md);
+      border-top: 1px solid rgba(255, 255, 255, 0.3);
+      h4 {
+        margin: 0 0 var(--spacing-sm) 0;
+        font-size: 1rem;
+      }
+      .stat-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        .stat-badge {
+          display: inline-block;
+          padding: 0.5rem 1rem;
+          background-color: rgba(255, 255, 255, 0.25);
+          border-radius: 20px;
+          font-size: 0.9rem;
+          font-weight: 600;
+          backdrop-filter: blur(10px);
+        }
+      }
+    }
+    .stats-by-room {
       margin-top: var(--spacing-md);
       padding-top: var(--spacing-md);
       border-top: 1px solid rgba(255, 255, 255, 0.3);

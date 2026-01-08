@@ -1,11 +1,12 @@
 // Component Model - base and specific types
 
 export class Component {
-  constructor(id, name, type, status = 'offline') {
+  constructor(id, name, type, status = 'offline', room = 'Unassigned') {
     this.id = id;
     this.name = name;
     this.type = type; // 'light', 'thermostat', 'lock', 'camera', etc.
     this.status = status; // 'online' | 'offline'
+    this.room = room;
     this.createdAt = new Date();
     this.lastUpdated = new Date();
   }
@@ -32,6 +33,7 @@ export class Component {
       name: this.name,
       type: this.type,
       status: this.status,
+      room: this.room,
       lastUpdated: this.lastUpdated.toISOString(),
       actions: this.getActions(),
     };
@@ -39,8 +41,8 @@ export class Component {
 }
 
 export class Light extends Component {
-  constructor(id, name, brightness = 100) {
-    super(id, name, 'light');
+  constructor(id, name, brightness = 100, room = 'Unassigned') {
+    super(id, name, 'light', 'offline', room);
     this.brightness = brightness;
   }
   getActions() {
@@ -71,8 +73,8 @@ export class Light extends Component {
 }
 
 export class Thermostat extends Component {
-  constructor(id, name, temperature = 22) {
-    super(id, name, 'thermostat');
+  constructor(id, name, temperature = 22, room = 'Unassigned') {
+    super(id, name, 'thermostat', 'offline', room);
     this.temperature = temperature;
   }
   getActions() {
@@ -103,8 +105,8 @@ export class Thermostat extends Component {
 }
 
 export class SmartLock extends Component {
-  constructor(id, name, isLocked = true) {
-    super(id, name, 'lock');
+  constructor(id, name, isLocked = true, room = 'Unassigned') {
+    super(id, name, 'lock', 'offline', room);
     this.isLocked = isLocked;
   }
   getActions() {
@@ -130,8 +132,8 @@ export class SmartLock extends Component {
 }
 
 export class Camera extends Component {
-  constructor(id, name, isRecording = false) {
-    super(id, name, 'camera');
+  constructor(id, name, isRecording = false, room = 'Unassigned') {
+    super(id, name, 'camera', 'offline', room);
     this.isRecording = isRecording;
   }
   getActions() {
@@ -157,8 +159,8 @@ export class Camera extends Component {
 }
 
 export class Television extends Component {
-  constructor(id, name) {
-    super(id, name, 'television');
+  constructor(id, name, room = 'Unassigned') {
+    super(id, name, 'television', 'offline', room);
     this.volume = 50;
     this.currentChannel = 1;
     this.channels = [

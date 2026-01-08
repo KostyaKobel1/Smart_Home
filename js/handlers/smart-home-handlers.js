@@ -34,11 +34,11 @@ function isTypeAllowedForName(name, type) {
   return detectedType === typeValue;
 }
 
-export function handleCreateComponent(name, type, { onSuccess, onError } = {}) {
+export function handleCreateComponent(name, type, room = 'Unassigned', { onSuccess, onError } = {}) {
   if (!name) return onError?.('Name is required');
   if (!isTypeAllowedForName(name, type)) return onError?.(INVALID_TYPE_MESSAGE);
   try {
-    const info = smartHomeService.createComponent(name, type);
+    const info = smartHomeService.createComponent(name, type, room);
     onSuccess?.(info);
   } catch (e) {
     onError?.(e.message || 'Create error');

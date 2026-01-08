@@ -6,6 +6,9 @@ const TOAST_DURATION = 3000; // 3 seconds
 const DOM_ELEMENT_IDS = {
     input: 'component-name-input',
     typeSelect: 'component-type-select',
+    roomInput: 'component-room-input',
+    roomFilter: 'component-room-filter',
+    roomSelect: 'component-room-select',
     createBtn: 'create-component-btn',
     removeBtn: 'remove-component-btn',
     listBtn: 'get-full-list-of-components-btn',
@@ -22,6 +25,9 @@ const DOM_ELEMENT_IDS = {
 const el = {
     input: null,
     typeSelect: null,
+    roomInput: null,
+    roomFilter: null,
+    roomSelect: null,
     createBtn: null,
     removeBtn: null,
     listBtn: null,
@@ -36,6 +42,8 @@ const el = {
 
 // Track if stats dashboard is currently visible
 let statsVisible = false;
+// Track stats display mode: 'global' or 'filtered'
+let statsMode = 'global';
 // Track if components list is currently visible
 let componentsListVisible = false;
 // Track if event log is currently visible
@@ -49,7 +57,19 @@ function autoRefreshStats() {
     if (statsVisible) {
         handleGetStats({
             onSuccess: (stats) => {
-                displayStats(stats);
+                const selectedRoom = getSelectedRoomFilter();
+                if (selectedRoom) {
+                    handleGetComponents({
+                        onSuccess: (list) => {
+                            const items = Array.isArray(list) ? list : [];
+                            const rs = computeRoomStats(items, selectedRoom);
+                            displayStats(stats, rs);
+                        },
+                        onError: () => { displayStats(stats); }
+                    });
+                } else {
+                    displayStats(stats);
+                }
             },
             onError: (error) => {
                 // Silent fail for auto-refresh
@@ -67,7 +87,8 @@ function autoRefreshComponentsList() {
         handleGetComponents({
             onSuccess: (list) => {
                 const items = Array.isArray(list) ? list : [];
-                displayComponentsAccordion(items);
+                populateRoomFilterOptionsFromList(items);
+                displayComponentsAccordion(applyRoomFilter(items));
             },
             onError: (error) => {
                 // Silent fail for auto-refresh
@@ -99,6 +120,9 @@ function autoRefreshEventLog() {
 function cacheElements() {
     el.input = document.getElementById(DOM_ELEMENT_IDS.input);
     el.typeSelect = document.getElementById(DOM_ELEMENT_IDS.typeSelect);
+    el.roomInput = document.getElementById(DOM_ELEMENT_IDS.roomInput);
+    el.roomFilter = document.getElementById(DOM_ELEMENT_IDS.roomFilter);
+    el.roomSelect = document.getElementById(DOM_ELEMENT_IDS.roomSelect);
     el.createBtn = document.getElementById(DOM_ELEMENT_IDS.createBtn);
     el.removeBtn = document.getElementById(DOM_ELEMENT_IDS.removeBtn);
     el.listBtn = document.getElementById(DOM_ELEMENT_IDS.listBtn);
@@ -109,6 +133,102 @@ function cacheElements() {
     el.select = document.getElementById(DOM_ELEMENT_IDS.select);
     el.statsDashboard = document.getElementById(DOM_ELEMENT_IDS.statsDashboard);
     el.eventLog = document.getElementById(DOM_ELEMENT_IDS.eventLog);
+}
+ /** Get selected room
+ * @returns {string} Room or 'Unassigned'
+ */
+function getComponentRoom() {
+    const val = (el.roomInput?.value || '').trim();
+    return val || 'Unassigned';
+}
+/** Get selected room filter */
+function getSelectedRoomFilter() {
+    return (el.roomFilter?.value || '').trim();
+}
+/** Populate room filter options from list of components */
+function populateRoomFilterOptionsFromList(list) {
+    if (!el.roomFilter) return;
+    const prev = el.roomFilter.value;
+    const rooms = Array.from(new Set((Array.isArray(list) ? list : []).map(c => String(c.room || 'Unassigned')))).sort();
+    el.roomFilter.innerHTML = '';
+    const allOpt = document.createElement('option');
+    allOpt.value = '';
+    allOpt.textContent = 'All Rooms';
+    el.roomFilter.appendChild(allOpt);
+    rooms.forEach(room => {
+        const opt = document.createElement('option');
+        opt.value = room;
+        opt.textContent = room;
+        el.roomFilter.appendChild(opt);
+    });
+    if (prev && rooms.includes(prev)) {
+        el.roomFilter.value = prev;
+    } else {
+        el.roomFilter.value = '';
+    }
+}
+/** Apply room filter to components list */
+function applyRoomFilter(list) {
+    const selected = getSelectedRoomFilter();
+    if (!selected) return list;
+    return (Array.isArray(list) ? list : []).filter(c => String(c.room || 'Unassigned') === selected);
+}
+
+/** Populate room select for removal with available rooms */
+function populateRoomSelectForRemoval() {
+    if (!el.roomSelect) return;
+    handleGetComponents({
+        onSuccess: (list) => {
+            const items = Array.isArray(list) ? list : [];
+            const prevValue = el.roomSelect.value;
+            const rooms = Array.from(new Set(items.map(c => String(c.room || 'Unassigned')))).sort();
+            el.roomSelect.innerHTML = '';
+            const allOpt = document.createElement('option');
+            allOpt.value = '';
+            allOpt.textContent = 'All Rooms';
+            el.roomSelect.appendChild(allOpt);
+            rooms.forEach(room => {
+                const opt = document.createElement('option');
+                opt.value = room;
+                opt.textContent = room;
+                el.roomSelect.appendChild(opt);
+            });
+            if (prevValue && rooms.includes(prevValue)) {
+                el.roomSelect.value = prevValue;
+            } else {
+                el.roomSelect.value = '';
+            }
+            updateSelectOptionsByRoom(el.roomSelect.value);
+        },
+        onError: () => {}
+    });
+}
+
+/** Update component select options filtered by selected room */
+function updateSelectOptionsByRoom(room) {
+    if (!el.select) return;
+    handleGetComponents({
+        onSuccess: (list) => {
+            const items = Array.isArray(list) ? list : [];
+            const filtered = room ? items.filter(c => String(c.room || 'Unassigned') === room) : items;
+            el.select.innerHTML = '';
+            if (filtered.length === 0) {
+                const opt = document.createElement('option');
+                opt.value = '';
+                opt.textContent = room ? `No components in ${room}` : 'No components available';
+                opt.disabled = true;
+                el.select.appendChild(opt);
+            } else {
+                filtered.forEach(component => {
+                    const opt = document.createElement('option');
+                    opt.value = String(component.id);
+                    opt.textContent = `${component.name} (${component.type}${component.room ? ' • ' + component.room : ''})`;
+                    el.select.appendChild(opt);
+                });
+            }
+        },
+        onError: () => {}
+    });
 }
 /**
  * Ensure toast container exists in DOM
@@ -221,7 +341,8 @@ function displayComponentsAccordion(components) {
     
     const heading = document.createElement('strong');
     heading.className = 'component-action__result-heading';
-    heading.textContent = `Active Components (${components.length}):`;
+    const selectedRoom = getSelectedRoomFilter();
+    heading.textContent = selectedRoom ? `Active Components (${components.length}) — Room: ${selectedRoom}` : `Active Components (${components.length}):`;
     
     const closeBtn = createCloseButton(el.result, () => {
         componentsListVisible = false;
@@ -497,7 +618,9 @@ const callbacks = {
     showToast,
     displayResult,
     displayComponentsList,
-    updateSelect: () => updateSelectOptions(el.select),
+    updateSelect: () => {
+        populateRoomSelectForRemoval();
+    },
     clearInput: () => { if (el.input) el.input.value = ''; },
 };
 
@@ -619,11 +742,13 @@ function performReset(mode, overlay) {
 function handleCreateClick() {
     const name = getComponentName();
     const type = getComponentType();
-    handleCreateComponent(name, type, {
+    const room = getComponentRoom();
+    handleCreateComponent(name, type, room, {
         onSuccess: (info) => {
             console.log('[Action] Component created:', info);
             callbacks.updateSelect();
             callbacks.clearInput();
+            if (el.roomInput) el.roomInput.value = '';
             callbacks.showToast(`✨ Component "${info.name}" created!`, 'success');
             autoRefreshStats();
             autoRefreshComponentsList();
@@ -663,7 +788,8 @@ function handleListClick() {
     handleGetComponents({
         onSuccess: (list) => {
             const items = Array.isArray(list) ? list : [];
-            displayComponentsAccordion(items);
+            populateRoomFilterOptionsFromList(items);
+            displayComponentsAccordion(applyRoomFilter(items));
             callbacks.showToast(`Found ${items.length} component(s)`, 'info');
         },
         onError: (err) => {
@@ -683,8 +809,24 @@ function handleStatsClick() {
     handleGetStats({
         onSuccess: (stats) => {
             console.log('[Stats] Initial stats loaded:', stats);
-            displayStats(stats);
-            callbacks.showToast('Statistics updated', 'info');
+            const selectedRoom = getSelectedRoomFilter();
+            if (selectedRoom) {
+                handleGetComponents({
+                    onSuccess: (list) => {
+                        const items = Array.isArray(list) ? list : [];
+                        const rs = computeRoomStats(items, selectedRoom);
+                        displayStats(stats, rs);
+                        callbacks.showToast('Statistics updated', 'info');
+                    },
+                    onError: () => { 
+                        displayStats(stats);
+                        callbacks.showToast('Statistics updated', 'info');
+                    }
+                });
+            } else {
+                displayStats(stats);
+                callbacks.showToast('Statistics updated', 'info');
+            }
         },
         onError: (err) => {
             console.error('[Stats] Error loading stats:', err);
@@ -721,43 +863,119 @@ function handleResetClick() {
 /**
  * Display statistics dashboard
  */
-function displayStats(stats) {
+function displayStats(stats, roomStats = null) {
     if (!el.statsDashboard) return;
     
-    const byTypeHtml = Object.entries(stats.byType)
+    const selectedRoom = getSelectedRoomFilter();
+    const canFilter = selectedRoom && roomStats;
+    const isFiltered = statsMode === 'filtered' && canFilter;
+    
+    const mainStats = isFiltered ? roomStats : stats;
+    const mainByTypeData = isFiltered ? roomStats.byType : stats.byType;
+    
+    const byTypeHtml = (mainByTypeData instanceof Map ? Array.from(mainByTypeData.entries()) : Object.entries(mainByTypeData))
         .map(([type, count]) => `<span class="stat-badge">${type}: ${count}</span>`)
         .join('');
+    const byRoomHtml = Object.entries(stats.byRoom || {})
+        .map(([room, count]) => `<span class="stat-badge">${room}: ${count}</span>`)
+        .join('');
+    
+    const modeLabel = isFiltered ? `📊 Statistics — ${selectedRoom}` : '📊 System Statistics';
+    const toggleBtn = canFilter ? `<button class="component-action__btn component-action__btn--mini" id="stats-mode-toggle">${statsMode === 'global' ? 'Show Room Only' : 'Show Global'}</button>` : '';
     
     el.statsDashboard.innerHTML = `
         <div class="stats-container">
             <div class="stats-header">
-                <h3 class="stats-title">📊 System Statistics</h3>
-                <button class="component-action__close-btn" aria-label="Close">✕</button>
+                <h3 class="stats-title">${modeLabel}</h3>
+                <div class="stats-header-controls">
+                    ${toggleBtn}
+                    <button class="component-action__close-btn" aria-label="Close">✕</button>
+                </div>
             </div>
             <div class="stats-grid">
                 <div class="stat-item">
                     <span class="stat-label">Total Components</span>
-                    <span class="stat-value">${stats.total}</span>
+                    <span class="stat-value">${mainStats.total}</span>
                 </div>
                 <div class="stat-item stat-item--online">
                     <span class="stat-label">Online</span>
-                    <span class="stat-value">${stats.online}</span>
+                    <span class="stat-value">${mainStats.online}</span>
                 </div>
                 <div class="stat-item stat-item--offline">
                     <span class="stat-label">Offline</span>
-                    <span class="stat-value">${stats.offline}</span>
+                    <span class="stat-value">${mainStats.offline}</span>
                 </div>
             </div>
             <div class="stats-by-type">
-                <h4>Components by Type</h4>
+                <h4>Components by Type${isFiltered ? ' (Room)' : ''}</h4>
                 <div class="stat-badges">${byTypeHtml || '<span class="stat-badge">No components</span>'}</div>
             </div>
+            ${statsMode === 'global' ? `
+            <div class="stats-by-room">
+                <h4>Components by Room</h4>
+                <div class="stat-badges">${byRoomHtml || '<span class="stat-badge">No rooms</span>'}</div>
+            </div>
+            ` : ''}
         </div>
     `;
     el.statsDashboard.querySelector('.component-action__close-btn')?.addEventListener('click', () => {
         el.statsDashboard.innerHTML = '';
         statsVisible = false;
+        statsMode = 'global';
     });
+    const toggleBtnEl = document.getElementById('stats-mode-toggle');
+    if (toggleBtnEl) {
+        toggleBtnEl.addEventListener('click', () => {
+            statsMode = statsMode === 'global' ? 'filtered' : 'global';
+            handleGetStats({
+                onSuccess: (stats) => {
+                    if (selectedRoom) {
+                        handleGetComponents({
+                            onSuccess: (list) => {
+                                const items = Array.isArray(list) ? list : [];
+                                const rs = computeRoomStats(items, selectedRoom);
+                                displayStats(stats, rs);
+                            },
+                            onError: () => { displayStats(stats); }
+                        });
+                    } else {
+                        displayStats(stats);
+                    }
+                },
+                onError: () => {}
+            });
+        });
+    }
+}
+
+/** Compute stats for a specific room from component list */
+function computeRoomStats(items, room) {
+    const filtered = (Array.isArray(items) ? items : []).filter(c => String(c.room || 'Unassigned') === room);
+    const total = filtered.length;
+    let online = 0;
+    let offline = 0;
+    const byType = new Map();
+    filtered.forEach(c => {
+        const status = String(c.status || '').toLowerCase();
+        if (status.includes('online')) online++; else offline++;
+        const type = String(c.type || 'unknown');
+        byType.set(type, (byType.get(type) || 0) + 1);
+    });
+    return { room, total, online, offline, byType };
+}
+
+/** Render the filtered room stats into the stats dashboard */
+function renderRoomStats(roomStats) {
+    const totalEl = document.getElementById('stats-room-total');
+    const onlineEl = document.getElementById('stats-room-online');
+    const offlineEl = document.getElementById('stats-room-offline');
+    const badgesEl = document.getElementById('stats-room-badges');
+    if (!totalEl || !onlineEl || !offlineEl || !badgesEl) return;
+    totalEl.textContent = String(roomStats.total);
+    onlineEl.textContent = String(roomStats.online);
+    offlineEl.textContent = String(roomStats.offline);
+    const badges = Array.from(roomStats.byType.entries()).map(([type, count]) => `<span class="stat-badge">${type}: ${count}</span>`).join('');
+    badgesEl.innerHTML = badges || '<span class="stat-badge">No components</span>';
 }
 
 /**
@@ -819,6 +1037,45 @@ function bindEvents() {
     el.statsBtn?.addEventListener('click', handleStatsClick);
     el.eventLogBtn?.addEventListener('click', handleEventLogClick);
     el.resetBtn?.addEventListener('click', handleResetClick);
+    el.roomSelect?.addEventListener('change', () => {
+        updateSelectOptionsByRoom(el.roomSelect.value);
+    });
+    el.roomFilter?.addEventListener('change', () => {
+        if (el.roomInput) {
+            el.roomInput.value = getSelectedRoomFilter() || '';
+        }
+        if (componentsListVisible) {
+            handleGetComponents({
+                onSuccess: (list) => {
+                    const items = Array.isArray(list) ? list : [];
+                    populateRoomFilterOptionsFromList(items);
+                    displayComponentsAccordion(applyRoomFilter(items));
+                },
+                onError: () => {}
+            });
+        }
+        if (statsVisible) {
+            handleGetStats({
+                onSuccess: (stats) => {
+                    const selectedRoom = getSelectedRoomFilter();
+                    if (selectedRoom) {
+                        handleGetComponents({
+                            onSuccess: (list) => {
+                                const items = Array.isArray(list) ? list : [];
+                                const rs = computeRoomStats(items, selectedRoom);
+                                displayStats(stats, rs);
+                            },
+                            onError: () => { displayStats(stats); }
+                        });
+                    } else {
+                        statsMode = 'global';
+                        displayStats(stats);
+                    }
+                },
+                onError: () => {}
+            });
+        }
+    });
 }
 
 /**
@@ -843,8 +1100,7 @@ function init() {
     }
 
     bindEvents();
-    // Populate select with current components (IDs)
-    updateSelectOptions(el.select);
+    populateRoomSelectForRemoval();
 }
 
 if (document.readyState === 'loading') {
