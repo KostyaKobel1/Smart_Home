@@ -5,11 +5,11 @@ const VALID_COMPONENT_TYPES = new Set(['generic', 'light', 'thermostat', 'lock',
 const INVALID_TYPE_MESSAGE = 'You have selected the wrong type for the component';
 
 const TYPE_KEYWORDS = {
-  light: ['light', 'lamp', 'bulb'],
-  thermostat: ['thermostat', 'temp', 'climate', 'heater'],
-  lock: ['lock', 'door'],
-  camera: ['camera', 'cam', 'cctv'],
-  television: ['tv', 'television', 'screen']
+  light: ['light', 'lamp', 'bulb', 'лампа', 'світло'],
+  thermostat: ['thermostat', 'temp', 'climate', 'heater', 'термостат', 'темп'],
+  lock: ['lock', 'door', 'замок'],
+  camera: ['camera', 'cam', 'cctv', 'камера'],
+  television: ['tv', 'television', 'screen', 'тв', 'телевізор']
 };
 
 function detectTypeFromName(name) {
@@ -81,9 +81,9 @@ export function handleGetComponents({ onSuccess, onError } = {}) {
   }
 }
 
-export function handleReset({ onSuccess, onError } = {}) {
+export function handleReset(mode = 'factory', { onSuccess, onError } = {}) {
   try {
-    const res = smartHomeService.reset();
+    const res = smartHomeService.reset(mode);
     res.success ? onSuccess?.(res) : onError?.(res.message);
   } catch (e) {
     onError?.(e.message || 'Reset error');

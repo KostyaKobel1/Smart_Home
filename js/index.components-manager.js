@@ -501,6 +501,118 @@ const callbacks = {
     clearInput: () => { if (el.input) el.input.value = ''; },
 };
 
+const RESET_OPTIONS = [
+    { value: 'event-log', label: 'Clear event log', description: 'Clears the event log only. Devices and statistics remain.' },
+    { value: 'factory', label: 'Factory reset (all data)', description: 'Removes all devices, counters, and the event log. Full wipe.' },
+];
+
+function createResetDialog(onConfirm, onCancel) {
+    const overlay = document.createElement('div');
+    overlay.className = 'reset-dialog-overlay';
+
+    const dialog = document.createElement('div');
+    dialog.className = 'reset-dialog';
+
+    const title = document.createElement('h3');
+    title.textContent = 'Reset Data';
+
+    const description = document.createElement('p');
+    description.textContent = 'Choose what to reset:';
+
+    const select = document.createElement('select');
+    select.className = 'reset-dialog__select';
+
+    RESET_OPTIONS.forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt.value;
+        option.textContent = opt.label;
+        select.appendChild(option);
+    });
+
+    const help = document.createElement('div');
+    help.className = 'reset-dialog__help';
+
+    const updateHelp = (val) => {
+        const current = RESET_OPTIONS.find(o => o.value === val);
+        help.textContent = current ? current.description : '';
+    };
+    select.addEventListener('change', () => updateHelp(select.value));
+    updateHelp(select.value);
+
+    const buttons = document.createElement('div');
+    buttons.className = 'reset-dialog__buttons';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.className = 'component-action__btn component-action__btn--remove';
+    cancelBtn.addEventListener('click', () => onCancel?.(overlay));
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.textContent = 'Reset';
+    confirmBtn.className = 'component-action__btn component-action__btn--reset';
+    confirmBtn.addEventListener('click', () => onConfirm?.(select.value, overlay));
+
+    buttons.appendChild(cancelBtn);
+    buttons.appendChild(confirmBtn);
+
+    dialog.appendChild(title);
+    dialog.appendChild(description);
+    dialog.appendChild(select);
+    dialog.appendChild(help);
+    dialog.appendChild(buttons);
+    overlay.appendChild(dialog);
+    return { overlay, select, confirmBtn, cancelBtn };
+}
+
+function closeResetDialog(overlay) {
+    if (overlay && overlay.parentElement) {
+        overlay.parentElement.removeChild(overlay);
+    }
+}
+
+function performReset(mode, overlay) {
+    const confirmations = {
+        'event-log': 'Clear the event log? Devices and statistics will remain.',
+        'factory': 'Factory reset: remove ALL devices, counters, and event log? This cannot be undone.',
+    };
+
+    if (!confirm(confirmations[mode] || 'Are you sure?')) {
+        closeResetDialog(overlay);
+        return;
+    }
+
+    handleReset(mode, {
+        onSuccess: (res) => {
+            callbacks.updateSelect();
+            callbacks.clearInput();
+
+            if (mode === 'factory') {
+                el.result.innerHTML = '';
+                componentsListVisible = false;
+            }
+
+            if (mode === 'event-log') {
+                el.eventLog.innerHTML = '';
+                eventLogVisible = false;
+            } else if (mode === 'factory') {
+                el.eventLog.innerHTML = '';
+                eventLogVisible = false;
+                // Do not delete/clear statistics data explicitly; let it recalc
+            }
+
+            callbacks.showToast(res.message, 'success');
+            autoRefreshStats();
+            autoRefreshComponentsList();
+            autoRefreshEventLog();
+            closeResetDialog(overlay);
+        },
+        onError: (err) => {
+            callbacks.showToast(String(err), 'error');
+            closeResetDialog(overlay);
+        }
+    });
+}
+
 /**
  * Event handler for create button click
  */
@@ -601,60 +713,9 @@ function handleEventLogClick() {
  * Event handler for reset button click
  */
 function handleResetClick() {
-    // First check if there's any data to reset
-    handleGetStats({
-        onSuccess: (stats) => {
-            if (stats.total === 0) {
-                callbacks.showToast('⚠️ No data to reset. System is already empty.', 'info');
-                return;
-            }
-            
-            // If there's data, show confirmation dialog
-            if (!confirm('⚠️ Are you sure you want to reset all data? This cannot be undone.')) {
-                return;
-            }
-            
-            handleReset({
-                onSuccess: (res) => {
-                    callbacks.updateSelect();
-                    callbacks.clearInput();
-                    el.result.innerHTML = '';
-                    el.statsDashboard.innerHTML = '';
-                    el.eventLog.innerHTML = '';
-                    statsVisible = false;
-                    componentsListVisible = false;
-                    eventLogVisible = false;
-                    callbacks.showToast(res.message, 'success');
-                },
-                onError: (err) => {
-                    callbacks.showToast(String(err), 'error');
-                }
-            });
-        },
-        onError: (err) => {
-            // If can't get stats, try reset anyway
-            if (!confirm('⚠️ Are you sure you want to reset all data? This cannot be undone.')) {
-                return;
-            }
-            
-            handleReset({
-                onSuccess: (res) => {
-                    callbacks.updateSelect();
-                    callbacks.clearInput();
-                    el.result.innerHTML = '';
-                    el.statsDashboard.innerHTML = '';
-                    el.eventLog.innerHTML = '';
-                    statsVisible = false;
-                    componentsListVisible = false;
-                    eventLogVisible = false;
-                    callbacks.showToast(res.message, 'success');
-                },
-                onError: (err) => {
-                    callbacks.showToast(String(err), 'error');
-                }
-            });
-        }
-    });
+    const { overlay, select } = createResetDialog((mode, ov) => performReset(mode, ov), closeResetDialog);
+    document.body.appendChild(overlay);
+    select.focus();
 }
 
 /**

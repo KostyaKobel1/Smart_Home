@@ -256,3 +256,126 @@
     }
   }
 }
+
+/* Reset dialog modal */
+.reset-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.2s ease;
+}
+
+.reset-dialog {
+  background: var(--alt-text-color);
+  color: var(--title-text-color);
+  padding: 1.5rem;
+  border-radius: calc(var(--border-radius) * 2);
+  width: min(440px, 92vw);
+  box-shadow: 0 16px 60px rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--color-border-light);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.reset-dialog h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.reset-dialog p {
+  margin: 0;
+  color: var(--text-color);
+}
+
+.reset-dialog__select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius);
+  border: 2px solid var(--color-border-light);
+  font-size: 1rem;
+  font-family: inherit;
+  background: var(--background-light);
+  transition: all var(--transition-speed) ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237c782f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.25rem;
+  padding-right: 2.5rem;
+
+  &:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    background-color: var(--alt-text-color);
+    box-shadow: 0 0 0 3px rgba(124, 120, 47, 0.12);
+  }
+}
+
+.reset-dialog__help {
+  font-size: 0.9rem;
+  color: var(--text-color);
+  background: var(--background-light);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius);
+  padding: 0.75rem;
+}
+
+.reset-dialog__buttons {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.reset-dialog__buttons .component-action__btn {
+  min-width: 110px;
+}
+
+.reset-dialog__buttons {
+  .component-action__btn--remove {
+    background-color: var(--background-light);
+    color: var(--title-text-color);
+    border: 2px solid var(--color-border-light);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all var(--transition-speed) ease;
+    &:hover {
+      background-color: var(--color-select-hover);
+      border-color: var(--accent-color);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+    }
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(124, 120, 47, 0.12);
+    }
+  }
+  .component-action__btn--reset {
+    background: linear-gradient(
+      135deg,
+      var(--color-btn-reset),
+      var(--color-gradient-end)
+    );
+    color: var(--alt-text-color);
+    border: 0;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+    transition: transform var(--transition-speed) ease,
+      filter var(--transition-speed) ease,
+      box-shadow var(--transition-speed) ease;
+    &:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+    }
+    &:active {
+      transform: translateY(0);
+    }
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(124, 120, 47, 0.12);
+    }
+  }
+}

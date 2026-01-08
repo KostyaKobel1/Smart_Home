@@ -225,26 +225,54 @@ export class SmartHomeService {
     }
   }
 
+  #removeComponents(predicate, { log = true } = {}) {
+    if (typeof predicate !== 'function') return 0;
+    let removed = 0;
+    this.components.forEach((component, id) => {
+      if (predicate(component)) {
+        this.components.delete(id);
+        removed++;
+      }
+    });
+    this.save();
+    if (log) {
+      this.logEvent('SYSTEM', `Removed ${removed} component(s)`);
+    }
+    return removed;
+  }
+
   /**
    * Reset all data (clear components, counter, and event log)
    */
-  reset() {
-    // Check if there's any data to reset
-    if (this.components.size === 0) {
+  reset(mode = 'factory') {
+    const normalized = String(mode || 'factory').toLowerCase();
+    const hasData = this.components.size > 0 || this.eventLog.length > 0;
+    if (!hasData) {
       return { success: false, message: 'No data to reset. System is already empty.' };
     }
 
+    // Option 1: Clear only the event log (keeps devices and counters)
+    if (normalized === 'event-log' || normalized === 'ui-clean') {
+      this.eventLog = [];
+      this.saveEventLog();
+      return {
+        success: true,
+        mode: 'event-log',
+        message: 'Event log cleared',
+      };
+    }
+
+    // Option 2: Factory reset: everything, including counters and event log
     this.components.clear();
     this.componentCounter = 0;
     this.eventLog = [];
     try {
-      if (typeof window === 'undefined' || !window.localStorage) return;
+      if (typeof window === 'undefined' || !window.localStorage) return { success: true, mode: 'factory', message: 'Factory reset completed' };
       window.localStorage.removeItem(this.STORAGE_KEYS.components);
       window.localStorage.removeItem(this.STORAGE_KEYS.counter);
       window.localStorage.removeItem(this.STORAGE_KEYS.eventLog);
     } catch (_) {}
-    this.logEvent('SYSTEM', 'All data cleared');
-    return { success: true, message: 'All data has been reset' };
+    return { success: true, mode: 'factory', message: 'Factory reset completed' };
   }
 
   /**
