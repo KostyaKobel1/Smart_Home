@@ -38,6 +38,8 @@ const el = {
 let statsVisible = false;
 // Track if components list is currently visible
 let componentsListVisible = false;
+// Track if event log is currently visible
+let eventLogVisible = false;
 
 /**
  * Refresh statistics if dashboard is visible
@@ -66,6 +68,23 @@ function autoRefreshComponentsList() {
             onSuccess: (list) => {
                 const items = Array.isArray(list) ? list : [];
                 displayComponentsAccordion(items);
+            },
+            onError: (error) => {
+                // Silent fail for auto-refresh
+            }
+        });
+    }
+}
+
+/**
+ * Refresh event log if it is visible
+ */
+function autoRefreshEventLog() {
+    console.log('[EventLog] Auto-refresh triggered. Visible:', eventLogVisible);
+    if (eventLogVisible) {
+        handleGetEventLog(20, {
+            onSuccess: (log) => {
+                displayEventLog(log);
             },
             onError: (error) => {
                 // Silent fail for auto-refresh
@@ -417,6 +436,7 @@ function executeAndToast(id, action, params = {}) {
             console.log('[Action] Action succeeded:', res);
             showToast(`🔄 ${res.message}`, 'success');
             autoRefreshStats();
+            autoRefreshEventLog();
             // Optimistically update UI meta and timestamps
             const item = el.result?.querySelector(`.component-accordion__item[data-id="${String(id)}"]`);
             if (item) {
@@ -495,6 +515,7 @@ function handleCreateClick() {
             callbacks.showToast(`✨ Component "${info.name}" created!`, 'success');
             autoRefreshStats();
             autoRefreshComponentsList();
+            autoRefreshEventLog();
         },
         onError: (err) => {
             callbacks.showToast(String(err), 'error');
@@ -514,6 +535,7 @@ function handleRemoveClick() {
             callbacks.showToast(`🗑️ ${res.message}`, 'success');
             autoRefreshStats();
             autoRefreshComponentsList();
+            autoRefreshEventLog();
         },
         onError: (err) => {
             callbacks.showToast(String(err), 'error');
@@ -563,6 +585,7 @@ function handleStatsClick() {
  * Event handler for event log button click
  */
 function handleEventLogClick() {
+    eventLogVisible = true;
     handleGetEventLog(20, {
         onSuccess: (log) => {
             displayEventLog(log);
@@ -600,6 +623,7 @@ function handleResetClick() {
                     el.eventLog.innerHTML = '';
                     statsVisible = false;
                     componentsListVisible = false;
+                    eventLogVisible = false;
                     callbacks.showToast(res.message, 'success');
                 },
                 onError: (err) => {
@@ -622,6 +646,7 @@ function handleResetClick() {
                     el.eventLog.innerHTML = '';
                     statsVisible = false;
                     componentsListVisible = false;
+                    eventLogVisible = false;
                     callbacks.showToast(res.message, 'success');
                 },
                 onError: (err) => {
@@ -690,9 +715,10 @@ function displayEventLog(log) {
                 <div class="event-log-empty">No events logged yet</div>
             </div>
         `;
-        el.eventLog.querySelector('.component-action__close-btn')?.addEventListener('click', () => {
-            el.eventLog.innerHTML = '';
-        });
+            el.eventLog.querySelector('.component-action__close-btn')?.addEventListener('click', () => {
+                el.eventLog.innerHTML = '';
+                eventLogVisible = false;
+            });
         return;
     }
     
@@ -719,6 +745,7 @@ function displayEventLog(log) {
     `;
     el.eventLog.querySelector('.component-action__close-btn')?.addEventListener('click', () => {
         el.eventLog.innerHTML = '';
+        eventLogVisible = false;
     });
 }
 /**
