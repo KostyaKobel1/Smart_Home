@@ -5,11 +5,11 @@ const VALID_COMPONENT_TYPES = new Set(['generic', 'light', 'thermostat', 'lock',
 const INVALID_TYPE_MESSAGE = 'You have selected the wrong type for the component';
 
 const TYPE_KEYWORDS = {
-  light: ['light', 'lamp', 'bulb', 'лампа', 'світло'],
-  thermostat: ['thermostat', 'temp', 'climate', 'heater', 'термостат', 'темп'],
-  lock: ['lock', 'door', 'замок'],
-  camera: ['camera', 'cam', 'cctv', 'камера'],
-  television: ['tv', 'television', 'screen', 'тв', 'телевізор']
+  light: ['light', 'lamp', 'bulb'],
+  thermostat: ['thermostat', 'temp', 'climate', 'heater'],
+  lock: ['lock', 'door', 'secure'],
+  camera: ['camera', 'cam', 'cctv'],
+  television: ['tv', 'television', 'screen']
 };
 
 function detectTypeFromName(name) {
