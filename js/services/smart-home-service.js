@@ -1,5 +1,10 @@
 // SmartHomeService - orchestrates components and actions
-import { Component, Light, Thermostat, SmartLock, Camera, Television } from '../models/component.model.js';
+import { Component } from '../models/component.model.js';
+import { Light } from '../models/light.model.js';
+import { Thermostat } from '../models/thermostat.model.js';
+import { SmartLock } from '../models/smart-lock.model.js';
+import { Camera } from '../models/camera.model.js';
+import { Television } from '../models/television.model.js';
 
 export class SmartHomeService {
   constructor() {
