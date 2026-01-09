@@ -1,4 +1,7 @@
-// Smart Home Handlers - thin layer bridging UI and service
+/**
+ * System Handlers - Системні операції (статистика, скидання, логи)
+ */
+
 import { smartHomeService } from '../services/smart-home-service.js';
 
 const VALID_COMPONENT_TYPES = new Set(['generic', 'light', 'thermostat', 'lock', 'camera', 'television', 'tv']);
@@ -52,48 +55,5 @@ export function handleDeleteComponent(id, { onSuccess, onError } = {}) {
     res.success ? onSuccess?.(res) : onError?.(res.message);
   } catch (e) {
     onError?.(e.message || 'Delete error');
-  }
-}
-
-export function handleComponentAction(id, action, params = {}, { onSuccess, onError } = {}) {
-  if (!id || !action) return onError?.('ID and action are required');
-  try {
-    const res = smartHomeService.executeAction(Number(id), action, params);
-    res.success ? onSuccess?.(res) : onError?.(res.message);
-  } catch (e) {
-    onError?.(e.message || 'Action error');
-  }
-}
-
-export function handleGetStats({ onSuccess, onError } = {}) {
-  try {
-    onSuccess?.(smartHomeService.stats());
-  } catch (e) {
-    onError?.(e.message || 'Stats error');
-  }
-}
-
-export function handleGetComponents({ onSuccess, onError } = {}) {
-  try {
-    onSuccess?.(smartHomeService.listComponents());
-  } catch (e) {
-    onError?.(e.message || 'List error');
-  }
-}
-
-export function handleReset(mode = 'factory', { onSuccess, onError } = {}) {
-  try {
-    const res = smartHomeService.reset(mode);
-    res.success ? onSuccess?.(res) : onError?.(res.message);
-  } catch (e) {
-    onError?.(e.message || 'Reset error');
-  }
-}
-
-export function handleGetEventLog(limit, { onSuccess, onError } = {}) {
-  try {
-    onSuccess?.(smartHomeService.getEventLog(limit));
-  } catch (e) {
-    onError?.(e.message || 'Event log error');
   }
 }

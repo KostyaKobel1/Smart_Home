@@ -1,4 +1,6 @@
-import { handleCreateComponent, handleDeleteComponent, handleGetComponents, handleReset, handleGetStats, handleGetEventLog, handleComponentAction } from './handlers/smart-home-handlers.js';
+import { handleCreateComponent, handleDeleteComponent } from './handlers/component-action.js';
+import { handleComponentAction, handleGetComponents } from './handlers/component-executor.js';
+import { handleGetStats, handleReset, handleGetEventLog } from './handlers/system-handlers.js';
 
 // Constants
 const TOAST_DURATION = 3000; // 3 seconds
